@@ -423,14 +423,17 @@
          */
         function initializeFirebase() {
              // Check if the configuration is properly set up outside of the canvas
-            if (!firebaseConfig.projectId || firebaseConfig.apiKey.includes("YOUR_API_KEY_HERE")) {
-                authErrorEl.textContent = 'Configuration Error: Please update the YOUR_FIREBASE_CONFIG_OBJECT in the script with your actual Firebase credentials.';
+            if (!firebaseConfig.projectId) {
+                authErrorEl.textContent = 'Configuration Error: "projectId" is missing from the Firebase configuration object.';
                 authErrorEl.classList.remove('hidden');
                 return;
             }
 
             try {
                 setLogLevel('Debug');
+                // LOGGING THE CONFIG FOR DEBUGGING THE USER'S REPORTED ERROR
+                console.log('Attempting to initialize Firebase with config:', firebaseConfig); 
+                
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
