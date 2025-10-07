@@ -106,7 +106,7 @@
                     <p id="auth-error" class="text-red-500 text-sm hidden"></p>
                 </div>
 
-                <!-- NEW: Loading Spinner during auth attempt -->
+                <!-- Loading Spinner during auth attempt -->
                 <div id="auth-loading-spinner" class="text-center py-4 hidden">
                     <div class="w-6 h-6 border-4 border-t-4 border-teal-600 border-t-transparent rounded-full animate-spin inline-block"></div>
                     <span class="text-sm text-gray-500 ml-2">Authenticating...</span>
@@ -351,7 +351,7 @@
         const adminAccessModalEl = document.getElementById('admin-access-modal'); 
         const userRolesListEl = document.getElementById('user-roles-list'); 
 
-        // New Auth UI Elements
+        // New Auth UI Elements for Feedback Control
         const authEmailInput = document.getElementById('auth-email');
         const authPasswordInput = document.getElementById('auth-password');
         const loginButton = document.getElementById('login-button');
@@ -381,6 +381,7 @@
         /**
          * Sets the loading state for the authentication form.
          * Disables inputs and button, and shows/hides the spinner.
+         * This function provides the instant feedback.
          * @param {boolean} isLoading - True to show spinner and disable elements, false otherwise.
          */
         function setAuthLoadingState(isLoading) {
@@ -391,9 +392,22 @@
 
             if (isLoading) {
                 authLoadingSpinner.classList.remove('hidden');
+                loginButton.textContent = isLoginMode ? 'Signing In...' : 'Registering...';
             } else {
                 authLoadingSpinner.classList.add('hidden');
+                loginButton.textContent = isLoginMode ? 'Login' : 'Register';
             }
+        }
+        
+        /**
+         * Clears the authentication error message on user input.
+         */
+        function clearAuthError() {
+            authErrorEl.classList.add('hidden');
+            authErrorEl.textContent = '';
+            // Reset to red just in case it was a green success message before error
+            authErrorEl.classList.remove('text-green-600'); 
+            authErrorEl.classList.add('text-red-500');
         }
         
         /**
@@ -411,11 +425,17 @@
          */
         function restoreAuthModalContent() {
             if (originalAuthContentHTML) {
+                // IMPORTANT: We need to use innerHTML to restore the element structure
+                // before re-attaching listeners.
                 authContentWrapperEl.innerHTML = originalAuthContentHTML;
                 
                 // Re-bind listeners for the restored elements
                 document.getElementById('auth-form').addEventListener('submit', handleAuthForm);
                 document.getElementById('toggle-auth-mode').addEventListener('click', toggleAuthMode);
+                
+                // Re-bind input listeners for better UX (clear error on type)
+                document.getElementById('auth-email').addEventListener('input', clearAuthError);
+                document.getElementById('auth-password').addEventListener('input', clearAuthError);
                 
                 isLoginMode = true; 
                 toggleAuthMode();
@@ -454,20 +474,20 @@
         function initializeFirebase() {
              // Check if the configuration is properly set up outside of the canvas
             if (!firebaseConfig.projectId) {
-                authErrorEl.textContent = 'Configuration Error: "projectId" is missing from the Firebase configuration object.';
+                authErrorEl.textContent = 'Configuration Error: "projectId" is missing from the Firebase configuration object. Please update the YOUR_FIREBASE_CONFIG_OBJECT variable.';
                 authErrorEl.classList.remove('hidden');
                 return;
             }
 
             try {
                 setLogLevel('Debug');
-                // LOGGING THE CONFIG FOR DEBUGGING THE USER'S REPORTED ERROR
-                console.log('Attempting to initialize Firebase with config:', firebaseConfig); 
+                console.log('Attempting to initialize Firebase...'); 
                 
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
+                // Store the initial HTML content of the modal for restoration
                 originalAuthContentHTML = authContentWrapperEl.innerHTML;
                 
                 onAuthStateChanged(auth, async (user) => {
@@ -480,6 +500,7 @@
                             
                             const currentEmail = user.email || 'your email';
 
+                            // --- Display Verification Required UI ---
                             authContentWrapperEl.innerHTML = `
                                 <h3 class="text-2xl font-bold mb-4 text-orange-600 text-center">Email Verification Required</h3>
                                 <p class="text-gray-700 mb-4">
@@ -545,7 +566,6 @@
                                 </button>
                             `;
                             document.getElementById('force-logout-btn-blocked').addEventListener('click', handleLogout);
-                            await signOut(auth); // Log them out after showing the message
                             return;
                         }
                         
@@ -592,26 +612,32 @@
             isLoginMode = !isLoginMode;
             authTitleEl.textContent = isLoginMode ? 'Agent Login' : 'Agent Registration';
             toggleAuthModeBtn.textContent = isLoginMode ? 'New agent? Click here to Register' : 'Already have an account? Click here to Login';
-            loginButton.textContent = isLoginMode ? 'Login' : 'Register';
+            
+            // Reset button text based on new mode
+            loginButton.textContent = isLoginMode ? 'Login' : 'Register'; 
+
             authErrorEl.classList.add('hidden');
             document.getElementById('auth-form').reset();
         }
 
         /**
          * Handles Login or Registration based on current mode.
+         * This function is the heart of the sign-in feedback loop.
          */
         async function handleAuthForm(event) {
             event.preventDefault();
             const email = authEmailInput.value;
             const password = authPasswordInput.value;
             
-            authErrorEl.classList.add('hidden');
-            setAuthLoadingState(true); // <-- START LOADING
+            clearAuthError(); // Clear previous errors/messages
+            setAuthLoadingState(true); // <-- START LOADING FEEDBACK
 
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
-                    // On success, onAuthStateChanged handles UI, so no need to stop loading here.
+                    // On successful login, the onAuthStateChanged listener handles 
+                    // access, validation, and hiding the modal.
+                    // No need to explicitly setAuthLoadingState(false) here.
                 } else {
                     // --- Registration with Role Assignment ---
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -633,7 +659,7 @@
                     // 3. Send verification email
                     await sendEmailVerification(userCredential.user);
                     
-                    // Show success message and switch to login mode
+                    // --- Registration Success Feedback ---
                     let successMessage = `Registration successful! You are a standard agent. A verification email has been sent to your inbox (check spam!)—please verify your address before logging in.`;
                     if (initialRole === 'admin') {
                         successMessage = `Admin Registration Successful! You are the first user and have been assigned the 'admin' role. A verification email has been sent to your inbox—please verify before logging in.`;
@@ -641,6 +667,8 @@
                     
                     authErrorEl.textContent = successMessage;
                     authErrorEl.classList.remove('hidden');
+                    authErrorEl.classList.remove('text-red-500');
+                    authErrorEl.classList.add('text-green-600');
                     
                     // Switch UI back to login mode
                     isLoginMode = true;
@@ -654,7 +682,7 @@
                 console.error("Authentication error:", error);
                 let errorMessage = "An unknown error occurred. Please check your network and try again.";
                 
-                // --- Detailed Error Handling for Login and Registration ---
+                // --- Failure Error Feedback ---
                 switch(error.code) {
                     case 'auth/invalid-email':
                         errorMessage = 'The email address format is incorrect.';
@@ -684,6 +712,8 @@
 
                 authErrorEl.textContent = errorMessage;
                 authErrorEl.classList.remove('hidden');
+                authErrorEl.classList.add('text-red-500');
+                
                 setAuthLoadingState(false); // <-- STOP LOADING (Authentication failure)
             }
         }
@@ -902,6 +932,7 @@
                 document.getElementById('prospect-status').value = prospectData.status || 'Lead';
                 document.getElementById('prospect-notes').value = prospectData.notes || '';
 
+                // Ensure nested objects exist before accessing properties
                 const compliance = prospectData.compliance || {};
                 document.getElementById('compliance-recorded').checked = !!compliance.recorded;
                 document.getElementById('compliance-soa-taken').checked = !!compliance.soaTaken;
@@ -1038,6 +1069,10 @@
         authFormEl.addEventListener('submit', handleAuthForm);
         toggleAuthModeBtn.addEventListener('click', toggleAuthMode);
         logoutBtn.addEventListener('click', handleLogout);
+        
+        // Minor UX Improvement: Clear error when user starts typing (crucial for good feedback)
+        authEmailInput.addEventListener('input', clearAuthError);
+        authPasswordInput.addEventListener('input', clearAuthError);
 
         // --- Admin Listeners (NEW) ---
         adminBtn.addEventListener('click', openAdminModal);
