@@ -266,7 +266,7 @@
     <!-- Admin Access Management Modal -->
     <div id="admin-access-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
         <div class="bg-white w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl p-6 custom-scroll overflow-y-auto transform transition-all">
-            <h4 class="text-2xl font-bold mb-4 text-purple-600 border-b pb-2">Agent Access Management (Admin)</h4>
+            <h4 class="2xl font-bold mb-4 text-purple-600 border-b pb-2">Agent Access Management (Admin)</h4>
             <p class="text-gray-700 mb-4 text-sm">
                 This is a simulated Admin Panel. You can deactivate agent access or change roles by updating their public record.
             </p>
@@ -294,7 +294,23 @@
             sendEmailVerification, 
             reload, 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, deleteDoc, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, deleteDoc, getDocs, setLogLevel, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =======================================================================
+        // IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION OBJECT HERE
+        //            Replace everything inside the curly braces {} with the config 
+        //            you copied from the Firebase Console's "Register app" step.
+        // =======================================================================
+        const YOUR_FIREBASE_CONFIG_OBJECT = {
+            apiKey: "AIzaSyAJdgny5PgiiNEmjiW9D-2I8s86IIGuGDw",
+            authDomain: "crm-web-c8dd7.firebaseapp.com",
+            projectId: "crm-web-c8dd7",
+            storageBucket: "crm-web-c8dd7.firebasestorage.app",
+            messagingSenderId: "1006804847425",
+            appId: "1:1006804847425:web:02773a5c430113fa362fc0",
+            measurementId: "G-0X1P0QG4BC"
+        };
+        // =======================================================================
 
         // Global Firebase variables
         let app;
@@ -302,14 +318,18 @@
         let auth;
         let userId = null; 
         let userEmail = null;
-        let userRole = 'unauthenticated'; // NEW: Track the user's role
+        let userRole = 'unauthenticated'; 
         let prospectsList = []; 
 
         // Firestore Configuration & Setup
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        // Prioritize the global variable if it exists (for internal use), otherwise use the hardcoded config.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'medicare-crm-app-external';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : YOUR_FIREBASE_CONFIG_OBJECT;
+
         const PROSPECTS_COLLECTION = 'medicare_prospects'; // Private per user
-        const USER_ROLES_COLLECTION = 'user_roles'; // NEW: Public for admin management
+        const USER_ROLES_COLLECTION = 'user_roles'; // Public for admin management
 
         // UI Elements
         const appContainerEl = document.getElementById('app-container');
@@ -321,9 +341,9 @@
         const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
         const userEmailEl = document.getElementById('user-email');
         const logoutBtn = document.getElementById('logout-btn');
-        const adminBtn = document.getElementById('admin-btn'); // NEW Admin Button Reference
-        const adminAccessModalEl = document.getElementById('admin-access-modal'); // NEW Admin Modal Reference
-        const userRolesListEl = document.getElementById('user-roles-list'); // NEW Admin List Container
+        const adminBtn = document.getElementById('admin-btn'); 
+        const adminAccessModalEl = document.getElementById('admin-access-modal'); 
+        const userRolesListEl = document.getElementById('user-roles-list'); 
 
         const prospectListEl = document.getElementById('prospects-list');
         const loadingMessageEl = document.getElementById('loading-message');
@@ -388,13 +408,13 @@
                 if (roleSnapshot.exists()) {
                     return roleSnapshot.data();
                 } else {
-                    console.warn(`User role document not found for UID: ${uid}. Defaulting to agent/inactive.`);
-                    // A user without a role doc should ideally be treated as inactive or problematic.
-                    return { role: 'agent', status: 'inactive' }; 
+                    console.warn(`User role document not found for UID: ${uid}. Defaulting to agent/active.`);
+                    // A user without a role doc should ideally be treated as active for now.
+                    return { role: 'agent', status: 'active' }; 
                 }
             } catch (e) {
                 console.error("Error fetching user role:", e);
-                return { role: 'agent', status: 'inactive' };
+                return { role: 'agent', status: 'active' };
             }
         }
 
@@ -402,6 +422,13 @@
          * Initializes Firebase and sets up authentication listener.
          */
         function initializeFirebase() {
+             // Check if the configuration is properly set up outside of the canvas
+            if (!firebaseConfig.projectId || firebaseConfig.apiKey.includes("YOUR_API_KEY_HERE")) {
+                authErrorEl.textContent = 'Configuration Error: Please update the YOUR_FIREBASE_CONFIG_OBJECT in the script with your actual Firebase credentials.';
+                authErrorEl.classList.remove('hidden');
+                return;
+            }
+
             try {
                 setLogLevel('Debug');
                 app = initializeApp(firebaseConfig);
@@ -415,7 +442,6 @@
                         
                         // 1. Check Email Verification
                         if (!user.emailVerified) {
-                            // ... (Email verification UI logic remains the same) ...
                             appContainerEl.classList.add('hidden');
                             authModalEl.classList.remove('hidden'); 
                             
@@ -470,7 +496,7 @@
                             return;
                         }
                         
-                        // 2. Check Role/Status for Access Control (NEW)
+                        // 2. Check Role/Status for Access Control
                         const roleData = await fetchUserRole(user.uid);
                         userRole = roleData.role;
                         
@@ -590,15 +616,15 @@
                 }
             } catch (error) {
                 console.error("Authentication error:", error);
-                let errorMessage = "An unknown error occurred.";
+                let errorMessage = "An unknown error occurred. Ensure your Firebase configuration is correct and Email/Password Sign-in is enabled.";
                 if (error.code === 'auth/weak-password') {
                     errorMessage = 'Password should be at least 6 characters.';
                 } else if (error.code === 'auth/email-already-in-use') {
                     errorMessage = 'That email is already registered.';
-                } else if (error.code === 'auth/invalid-email' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                } else if (error.code === 'auth/invalid-email' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
                     errorMessage = 'Invalid email or password.';
-                } else if (error.code === 'auth/invalid-credential') {
-                     errorMessage = 'Invalid login credentials.';
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage = 'Email/Password sign-in is disabled. Please enable it in your Firebase Console under Authentication.';
                 }
                 authErrorEl.textContent = errorMessage;
                 authErrorEl.classList.remove('hidden');
@@ -657,7 +683,7 @@
                         <p class="font-medium text-gray-800 break-words">${user.email || 'N/A'}${isCurrentUser ? ' (You)' : ''}</p>
                         <p class="text-xs text-gray-500">UID: ${user.uid}</p>
                     </div>
-                    <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-1/2 justify-end">
+                    <div class="flex flex-col md:flex-row md:space-x-4 space-y-2 md:space-y-0 w-full md:w-1/2 justify-end">
                         <span class="text-sm font-semibold px-2 py-1 rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'} min-w-[80px] text-center">
                             ${user.role.toUpperCase()}
                         </span>
