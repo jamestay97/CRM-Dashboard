@@ -302,7 +302,7 @@
         //            you copied from the Firebase Console's "Register app" step.
         // =======================================================================
         const YOUR_FIREBASE_CONFIG_OBJECT = {
-            apiKey: "AIzaSyAJdgny5PgiiNEmjiW9D-2I8s86IIGuGDw",
+            apiKey: "AIzaSyAJdgny5PgiiNEmjiW9D-2I8s8s86IIGuGDw",
             authDomain: "crm-web-c8dd7.firebaseapp.com",
             projectId: "crm-web-c8dd7",
             storageBucket: "crm-web-c8dd7.firebasestorage.app",
@@ -603,9 +603,9 @@
                     await sendEmailVerification(userCredential.user);
                     
                     // Show success message and switch to login mode
-                    let successMessage = `Registration successful! You are a standard agent. Please check your email inbox (and spam folder) to verify your address before logging in.`;
+                    let successMessage = `Registration successful! You are a standard agent. A verification email has been sent to your inbox (check spam!)—please verify your address before logging in.`;
                     if (initialRole === 'admin') {
-                        successMessage = `Admin Registration Successful! You are the first user and have been assigned the 'admin' role. Please check your email to verify.`;
+                        successMessage = `Admin Registration Successful! You are the first user and have been assigned the 'admin' role. A verification email has been sent to your inbox—please verify before logging in.`;
                     }
                     
                     authErrorEl.textContent = successMessage;
@@ -923,7 +923,10 @@
                     await addDoc(prospectsRef, prospectData);
                     console.log("New document added.");
                 }
-                closeModal();
+                
+                // === FIX APPLIED HERE: Ensure modal closes on successful save ===
+                closeModal(); 
+
             } catch (e) {
                 console.error("Error adding/updating document: ", e);
             }
@@ -994,3 +997,4 @@
     </script>
 </body>
 </html>
+
