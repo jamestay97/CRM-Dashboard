@@ -7,7 +7,7 @@
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Inter font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=100..900&display=swap" rel="stylesheet">
     <style>
         /* Custom styles for the app and font setting */
         body {
@@ -15,7 +15,7 @@
             background-color: #f7f9fb; /* Light background */
         }
         .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.7); /* Darker overlay for login */
             transition: opacity 0.3s ease;
         }
         .prospect-card:hover {
@@ -38,14 +38,21 @@
 <body>
 
     <!-- Main Application Container -->
-    <div class="min-h-screen flex flex-col">
+    <div id="app-container" class="min-h-screen flex flex-col hidden">
         
         <!-- Header -->
         <header class="bg-white shadow-md p-4 sticky top-0 z-10">
             <div class="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto">
                 <h1 class="text-2xl font-bold text-teal-600">Medicare CRM Dashboard</h1>
-                <div class="text-sm text-gray-600 mt-2 md:mt-0">
-                    User: <span id="user-id" class="font-mono bg-gray-100 px-2 py-1 rounded text-xs truncate max-w-xs inline-block">Authenticating...</span>
+                <div class="flex items-center space-x-4 mt-2 md:mt-0">
+                    <span id="user-email" class="text-sm text-gray-700 font-medium">Loading...</span>
+                    <!-- Admin Management Button (Conditionally Shown) -->
+                    <button id="admin-btn" class="text-sm bg-purple-500 text-white px-3 py-1 rounded-full hover:bg-purple-600 transition duration-200 hidden">
+                        Manage Agents
+                    </button>
+                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-3 rounded-lg text-sm transition duration-200">
+                        Logout
+                    </button>
                 </div>
             </div>
         </header>
@@ -82,8 +89,37 @@
         </main>
     </div>
 
+    <!-- Login/Signup Modal (Active when logged out) -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div id="auth-content-wrapper" class="bg-white w-full max-w-md rounded-xl shadow-2xl p-8 transform transition-all">
+            <h3 id="auth-title" class="text-2xl font-bold mb-6 text-teal-600 text-center">Agent Login</h3>
+            <form id="auth-form">
+                <div class="space-y-4">
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Email</span>
+                        <input type="email" id="auth-email" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                    </label>
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Password</span>
+                        <input type="password" id="auth-password" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                    </label>
+                    <p id="auth-error" class="text-red-500 text-sm hidden"></p>
+                </div>
+                
+                <div class="flex flex-col space-y-3 mt-6">
+                    <button type="submit" id="login-button" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 px-6 rounded-lg shadow-md transition duration-200">
+                        Login
+                    </button>
+                    <button type="button" id="toggle-auth-mode" class="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                        New agent? Click here to Register
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Prospect Management Modal -->
-    <div id="prospect-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+    <div id="prospect-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 modal-overlay">
         <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl p-6 custom-scroll overflow-y-auto transform transition-all">
             <h3 id="modal-title" class="text-2xl font-bold mb-6 text-teal-600">New Prospect</h3>
             <form id="prospect-form">
@@ -167,7 +203,7 @@
                     </div>
                 </div>
 
-                <!-- NEW: Appointment & Sales Tracking -->
+                <!-- Appointment & Sales Tracking -->
                 <div class="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
                     <h4 class="text-xl font-semibold mb-4 text-blue-800 border-b pb-2">Appointment & Sales Tracking</h4>
                     
@@ -227,34 +263,77 @@
         </div>
     </div>
 
+    <!-- Admin Access Management Modal -->
+    <div id="admin-access-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl p-6 custom-scroll overflow-y-auto transform transition-all">
+            <h4 class="text-2xl font-bold mb-4 text-purple-600 border-b pb-2">Agent Access Management (Admin)</h4>
+            <p class="text-gray-700 mb-4 text-sm">
+                This is a simulated Admin Panel. You can deactivate agent access or change roles by updating their public record.
+            </p>
+            <div id="user-roles-list" class="space-y-3 mt-4">
+                <p class="text-center text-gray-500">Loading user roles...</p>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button id="close-admin-modal-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase Scripts (Must be type="module") -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            sendEmailVerification, 
+            reload, 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, deleteDoc, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global Firebase variables
         let app;
         let db;
         let auth;
-        let userId = 'unknown'; // Will be set after auth
-        let prospectsList = []; // Array to hold all prospects for filtering/searching
+        let userId = null; 
+        let userEmail = null;
+        let userRole = 'unauthenticated'; // NEW: Track the user's role
+        let prospectsList = []; 
 
         // Firestore Configuration & Setup
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        const COLLECTION_NAME = 'medicare_prospects';
+        const PROSPECTS_COLLECTION = 'medicare_prospects'; // Private per user
+        const USER_ROLES_COLLECTION = 'user_roles'; // NEW: Public for admin management
 
         // UI Elements
+        const appContainerEl = document.getElementById('app-container');
+        const authModalEl = document.getElementById('auth-modal');
+        const authContentWrapperEl = document.getElementById('auth-content-wrapper');
+        const authFormEl = document.getElementById('auth-form');
+        const authTitleEl = document.getElementById('auth-title');
+        const authErrorEl = document.getElementById('auth-error');
+        const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
+        const userEmailEl = document.getElementById('user-email');
+        const logoutBtn = document.getElementById('logout-btn');
+        const adminBtn = document.getElementById('admin-btn'); // NEW Admin Button Reference
+        const adminAccessModalEl = document.getElementById('admin-access-modal'); // NEW Admin Modal Reference
+        const userRolesListEl = document.getElementById('user-roles-list'); // NEW Admin List Container
+
         const prospectListEl = document.getElementById('prospects-list');
-        const userIdEl = document.getElementById('user-id');
         const loadingMessageEl = document.getElementById('loading-message');
         const modalEl = document.getElementById('prospect-modal');
         const deleteConfirmModalEl = document.getElementById('delete-confirmation-modal');
         const formEl = document.getElementById('prospect-form');
         const deleteBtn = document.getElementById('delete-prospect-btn');
+
+        let isLoginMode = true;
+        let originalAuthContentHTML = ''; 
 
         // Status color mapping for better visualization
         const statusColors = {
@@ -266,53 +345,372 @@
             'Enrolled - MA': 'bg-teal-200 text-teal-800',
             'Not Interested': 'bg-gray-200 text-gray-700',
         };
+        
+        /**
+         * Returns the public collection reference for user roles.
+         */
+        function getRolesCollectionRef() {
+            if (!db) return null;
+            // Data is stored publicly for all users to read (needed for admin list)
+            const collectionPath = `/artifacts/${appId}/public/data/${USER_ROLES_COLLECTION}`;
+            return collection(db, collectionPath);
+        }
+
+        /**
+         * Restores the auth modal content to the original login/register form.
+         */
+        function restoreAuthModalContent() {
+            if (originalAuthContentHTML) {
+                authContentWrapperEl.innerHTML = originalAuthContentHTML;
+                
+                // Re-bind listeners for the restored elements
+                document.getElementById('auth-form').addEventListener('submit', handleAuthForm);
+                document.getElementById('toggle-auth-mode').addEventListener('click', toggleAuthMode);
+                
+                isLoginMode = true; 
+                toggleAuthMode();
+            }
+        }
+
+        /**
+         * Fetches the user's role and status from the public collection.
+         * @param {string} uid - The user's Firebase UID.
+         * @returns {Object|null} The user role data, or null.
+         */
+        async function fetchUserRole(uid) {
+            const rolesRef = getRolesCollectionRef();
+            if (!rolesRef) return null;
+            
+            try {
+                const docRef = doc(rolesRef, uid);
+                const roleSnapshot = await getDoc(docRef);
+
+                if (roleSnapshot.exists()) {
+                    return roleSnapshot.data();
+                } else {
+                    console.warn(`User role document not found for UID: ${uid}. Defaulting to agent/inactive.`);
+                    // A user without a role doc should ideally be treated as inactive or problematic.
+                    return { role: 'agent', status: 'inactive' }; 
+                }
+            } catch (e) {
+                console.error("Error fetching user role:", e);
+                return { role: 'agent', status: 'inactive' };
+            }
+        }
 
         /**
          * Initializes Firebase and sets up authentication listener.
          */
-        async function initializeFirebase() {
+        function initializeFirebase() {
             try {
-                // Set debug level for better console logging
                 setLogLevel('Debug');
-
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-
-                // Initial authentication attempt
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                // Listen for authentication state changes
-                onAuthStateChanged(auth, (user) => {
+                
+                originalAuthContentHTML = authContentWrapperEl.innerHTML;
+                
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
+                        
+                        // 1. Check Email Verification
+                        if (!user.emailVerified) {
+                            // ... (Email verification UI logic remains the same) ...
+                            appContainerEl.classList.add('hidden');
+                            authModalEl.classList.remove('hidden'); 
+                            
+                            const currentEmail = user.email || 'your email';
+
+                            authContentWrapperEl.innerHTML = `
+                                <h3 class="text-2xl font-bold mb-4 text-orange-600 text-center">Email Verification Required</h3>
+                                <p class="text-gray-700 mb-4">
+                                    Hello, <span class="font-bold text-teal-600">${currentEmail}</span>. Please click the verification link sent to your inbox (check spam!).
+                                </p>
+                                <p id="verification-message" class="text-sm text-red-500 mb-6"></p>
+
+                                <div class="flex flex-col space-y-3">
+                                    <button type="button" id="resend-verification" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 rounded-lg shadow-md transition duration-200">
+                                        Resend Verification Email
+                                    </button>
+                                    <button type="button" id="reload-verification-status" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 rounded-lg shadow-md transition duration-200">
+                                        I Have Verified My Email (Click to Reload)
+                                    </button>
+                                    <button type="button" id="force-logout-btn" class="text-sm text-gray-500 hover:text-red-500">
+                                        Log Out
+                                    </button>
+                                </div>
+                            `;
+                            
+                            document.getElementById('force-logout-btn').addEventListener('click', handleLogout);
+                            
+                            document.getElementById('resend-verification').addEventListener('click', async () => {
+                                try {
+                                    await sendEmailVerification(user);
+                                    document.getElementById('verification-message').textContent = 'Verification email sent successfully! Please check your inbox.';
+                                    document.getElementById('verification-message').classList.remove('text-red-500');
+                                    document.getElementById('verification-message').classList.add('text-green-500');
+                                } catch (e) {
+                                    document.getElementById('verification-message').textContent = 'Error sending email. Please try again later.';
+                                    document.getElementById('verification-message').classList.remove('text-green-500');
+                                    document.getElementById('verification-message').classList.add('text-red-500');
+                                }
+                            });
+
+                            document.getElementById('reload-verification-status').addEventListener('click', async () => {
+                                try {
+                                    await reload(user);
+                                } catch (e) {
+                                    console.error("Error reloading user status:", e);
+                                    document.getElementById('verification-message').textContent = 'Error reloading status. Try logging out and back in.';
+                                    document.getElementById('verification-message').classList.remove('text-green-500');
+                                    document.getElementById('verification-message').classList.add('text-red-500');
+                                }
+                            });
+
+                            return;
+                        }
+                        
+                        // 2. Check Role/Status for Access Control (NEW)
+                        const roleData = await fetchUserRole(user.uid);
+                        userRole = roleData.role;
+                        
+                        if (roleData.status === 'inactive') {
+                            // User is verified but blocked by admin
+                            authContentWrapperEl.innerHTML = `
+                                <h3 class="text-2xl font-bold mb-4 text-red-600 text-center">Access Blocked</h3>
+                                <p class="text-gray-700 mb-6">
+                                    Your account (<span class="font-bold text-teal-600">${user.email}</span>) has been marked as inactive by an administrator. Please contact your manager for access renewal.
+                                </p>
+                                <button type="button" id="force-logout-btn-blocked" class="bg-red-500 hover:bg-red-600 text-white font-medium py-3 rounded-lg shadow-md transition duration-200 w-full">
+                                    Log Out
+                                </button>
+                            `;
+                            document.getElementById('force-logout-btn-blocked').addEventListener('click', handleLogout);
+                            await signOut(auth); // Log them out after showing the message
+                            return;
+                        }
+                        
+                        // 3. User is verified and active (Grant Access)
                         userId = user.uid;
-                        userIdEl.textContent = userId;
-                        userIdEl.title = userId;
+                        userEmail = user.email;
+                        userEmailEl.textContent = userEmail;
+                        
+                        // Show/Hide Admin button based on role
+                        adminBtn.classList.toggle('hidden', userRole !== 'admin');
+                        
+                        // Show main app, hide auth modal
+                        authModalEl.classList.add('hidden');
+                        appContainerEl.classList.remove('hidden');
                         setupRealtimeListener();
+
                     } else {
-                        userId = 'Unauthenticated';
-                        userIdEl.textContent = userId;
-                        loadingMessageEl.textContent = 'Please log in or refresh.';
+                        // Logged out state
+                        userId = null;
+                        userEmail = null;
+                        userRole = 'unauthenticated';
+                        
+                        restoreAuthModalContent();
+                        
+                        adminBtn.classList.add('hidden');
+                        appContainerEl.classList.add('hidden');
+                        authModalEl.classList.remove('hidden');
+                        prospectListEl.innerHTML = '';
+                        loadingMessageEl.textContent = 'Please log in to view prospects.';
                     }
                 });
 
             } catch (error) {
                 console.error("Error during Firebase initialization or authentication:", error);
-                userIdEl.textContent = 'ERROR';
-                loadingMessageEl.textContent = `Error: ${error.message}`;
+                authErrorEl.textContent = `App Error: ${error.message}`;
+                authErrorEl.classList.remove('hidden');
             }
         }
 
+        /**
+         * Toggles between Login and Registration modes.
+         */
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            authTitleEl.textContent = isLoginMode ? 'Agent Login' : 'Agent Registration';
+            toggleAuthModeBtn.textContent = isLoginMode ? 'New agent? Click here to Register' : 'Already have an account? Click here to Login';
+            document.getElementById('login-button').textContent = isLoginMode ? 'Login' : 'Register';
+            authErrorEl.classList.add('hidden');
+            document.getElementById('auth-form').reset();
+        }
+
+        /**
+         * Handles Login or Registration based on current mode.
+         */
+        async function handleAuthForm(event) {
+            event.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            
+            authErrorEl.classList.add('hidden');
+
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    // --- Registration with Role Assignment ---
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const newUid = userCredential.user.uid;
+                    const rolesRef = getRolesCollectionRef();
+                    
+                    // 1. Determine Role (Admin or Agent)
+                    // Check if any role document exists yet (to determine the first user)
+                    const existingRolesSnapshot = await getDocs(rolesRef);
+                    const initialRole = existingRolesSnapshot.empty ? 'admin' : 'agent';
+                    
+                    // 2. Set public role document
+                    await setDoc(doc(rolesRef, newUid), {
+                        email: email,
+                        role: initialRole,
+                        status: 'active',
+                        createdAt: Date.now()
+                    });
+                    
+                    // 3. Send verification email
+                    await sendEmailVerification(userCredential.user);
+                    
+                    // Show success message and switch to login mode
+                    let successMessage = `Registration successful! You are a standard agent. Please check your email inbox (and spam folder) to verify your address before logging in.`;
+                    if (initialRole === 'admin') {
+                        successMessage = `Admin Registration Successful! You are the first user and have been assigned the 'admin' role. Please check your email to verify.`;
+                    }
+                    
+                    authErrorEl.textContent = successMessage;
+                    authErrorEl.classList.remove('hidden');
+                    
+                    isLoginMode = true;
+                    document.getElementById('auth-form').reset();
+                    toggleAuthMode();
+                    
+                    return; 
+                }
+            } catch (error) {
+                console.error("Authentication error:", error);
+                let errorMessage = "An unknown error occurred.";
+                if (error.code === 'auth/weak-password') {
+                    errorMessage = 'Password should be at least 6 characters.';
+                } else if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'That email is already registered.';
+                } else if (error.code === 'auth/invalid-email' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                    errorMessage = 'Invalid email or password.';
+                } else if (error.code === 'auth/invalid-credential') {
+                     errorMessage = 'Invalid login credentials.';
+                }
+                authErrorEl.textContent = errorMessage;
+                authErrorEl.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Handles user logout.
+         */
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+        }
+        
+        /**
+         * Opens the Admin Access Management Modal and sets up the listener.
+         */
+        function openAdminModal() {
+            if (userRole !== 'admin') return; // Safety check
+            adminAccessModalEl.classList.remove('hidden');
+            
+            const rolesRef = getRolesCollectionRef();
+            if (!rolesRef) return;
+
+            // Use onSnapshot to keep the Admin list real-time
+            onSnapshot(rolesRef, (snapshot) => {
+                const userRolesData = [];
+                snapshot.forEach((doc) => {
+                    userRolesData.push({ uid: doc.id, ...doc.data() });
+                });
+                renderUserRoles(userRolesData);
+            }, (error) => {
+                console.error("Error fetching user roles for admin:", error);
+                userRolesListEl.innerHTML = `<div class="text-red-600">Error loading users: ${error.message}</div>`;
+            });
+        }
+        
+        /**
+         * Renders the list of users and their access controls in the Admin Modal.
+         * @param {Array<Object>} users - List of user role data.
+         */
+        function renderUserRoles(users) {
+            userRolesListEl.innerHTML = '';
+            
+            users.forEach(user => {
+                const isActive = user.status === 'active';
+                const isCurrentUser = user.uid === userId;
+                
+                const card = document.createElement('div');
+                card.className = 'flex flex-col md:flex-row items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm';
+                card.innerHTML = `
+                    <div class="mb-2 md:mb-0 w-full md:w-1/2">
+                        <p class="font-medium text-gray-800 break-words">${user.email || 'N/A'}${isCurrentUser ? ' (You)' : ''}</p>
+                        <p class="text-xs text-gray-500">UID: ${user.uid}</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-1/2 justify-end">
+                        <span class="text-sm font-semibold px-2 py-1 rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'} min-w-[80px] text-center">
+                            ${user.role.toUpperCase()}
+                        </span>
+                        
+                        <button 
+                            id="status-toggle-${user.uid}"
+                            class="text-sm font-medium py-1 px-3 rounded-lg transition duration-200 w-full md:w-auto ${isActive ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}"
+                            ${isCurrentUser ? 'disabled' : ''}
+                            title="${isCurrentUser ? 'Cannot deactivate yourself' : ''}"
+                        >
+                            ${isActive ? 'Active' : 'Inactive'}
+                        </button>
+                    </div>
+                `;
+                
+                // Add listener to toggle status
+                if (!isCurrentUser) {
+                    card.querySelector(`#status-toggle-${user.uid}`).addEventListener('click', () => {
+                        const newStatus = isActive ? 'inactive' : 'active';
+                        toggleUserStatus(user.uid, newStatus);
+                    });
+                }
+
+                userRolesListEl.appendChild(card);
+            });
+        }
+        
+        /**
+         * Toggles the status of a user's account (Active/Inactive).
+         * @param {string} targetUid - The UID of the user to update.
+         * @param {string} newStatus - The new status ('active' or 'inactive').
+         */
+        async function toggleUserStatus(targetUid, newStatus) {
+            const rolesRef = getRolesCollectionRef();
+            if (!rolesRef) return;
+            
+            try {
+                const userDocRef = doc(rolesRef, targetUid);
+                await setDoc(userDocRef, { status: newStatus }, { merge: true });
+                console.log(`User ${targetUid} status updated to ${newStatus}`);
+                // The onSnapshot listener in openAdminModal will handle the re-render
+            } catch (e) {
+                console.error("Error updating user status:", e);
+            }
+        }
+        
         /**
          * Returns the path reference for the prospects collection based on the authenticated user.
          */
         function getProspectsCollectionRef() {
             if (!db || !userId) return null;
-            const collectionPath = `/artifacts/${appId}/users/${userId}/${COLLECTION_NAME}`;
+            // Data is stored privately per user
+            const collectionPath = `/artifacts/${appId}/users/${userId}/${PROSPECTS_COLLECTION}`;
             return collection(db, collectionPath);
         }
 
@@ -326,7 +724,8 @@
                 return;
             }
 
-            // Using onSnapshot for real-time updates
+            loadingMessageEl.classList.remove('hidden');
+
             onSnapshot(prospectsRef, (snapshot) => {
                 loadingMessageEl.classList.add('hidden');
                 prospectsList = [];
@@ -334,7 +733,6 @@
                     prospectsList.push({ id: doc.id, ...doc.data() });
                 });
 
-                // Sort the list by lastContacted (latest first)
                 prospectsList.sort((a, b) => (b.lastContacted || 0) - (a.lastContacted || 0));
 
                 renderProspects();
@@ -382,7 +780,6 @@
                 prospectCard.className = 'prospect-card bg-white p-4 md:p-6 rounded-xl shadow hover:shadow-lg transition duration-200 cursor-pointer border-l-4 border-teal-500';
                 prospectCard.dataset.id = prospect.id;
                 
-                // Format sale value for display if available
                 const saleText = prospect.saleValue ? 
                                 `<span class="text-green-600 font-bold ml-4">Sale: $${parseFloat(prospect.saleValue).toFixed(2)} AP</span>` : '';
 
@@ -408,37 +805,31 @@
          * @param {Object} prospectData - The prospect data object, or null for a new prospect.
          */
         function openModal(prospectData = null) {
-            formEl.reset(); // Clear the form
+            formEl.reset();
             let isEditing = !!prospectData;
             
-            // Set modal title and hidden ID
             document.getElementById('modal-title').textContent = isEditing ? 'Edit Prospect' : 'New Prospect';
             document.getElementById('prospect-doc-id').value = isEditing ? prospectData.id : '';
             
-            // Show/Hide Delete button
             deleteBtn.classList.toggle('hidden', !isEditing);
             
             if (isEditing) {
-                // Populate the form fields
                 document.getElementById('prospect-name').value = prospectData.name || '';
                 document.getElementById('prospect-phone').value = prospectData.phone || '';
                 document.getElementById('prospect-status').value = prospectData.status || 'Lead';
                 document.getElementById('prospect-notes').value = prospectData.notes || '';
 
-                // Compliance
                 const compliance = prospectData.compliance || {};
                 document.getElementById('compliance-recorded').checked = !!compliance.recorded;
                 document.getElementById('compliance-soa-taken').checked = !!compliance.soaTaken;
                 document.getElementById('compliance-soa-date').value = compliance.soaDate || '';
 
-                // Products
                 const products = prospectData.products || {};
                 document.getElementById('product-medigap').checked = !!products.medigap;
                 document.getElementById('product-ma').checked = !!products.ma;
                 document.getElementById('product-dvh').checked = !!products.dvh;
                 document.getElementById('product-hip').checked = !!products.hip;
 
-                // NEW: Appointments & Sales
                 document.getElementById('appointment-date').value = prospectData.appointmentDate || '';
                 document.getElementById('appointment-time').value = prospectData.appointmentTime || '';
                 document.getElementById('sale-value').value = prospectData.saleValue || '';
@@ -472,9 +863,8 @@
                 phone: document.getElementById('prospect-phone').value,
                 status: document.getElementById('prospect-status').value,
                 notes: document.getElementById('prospect-notes').value,
-                lastContacted: Date.now(), // Update last contacted on save
+                lastContacted: Date.now(),
                 
-                // NEW: Appointment & Sales Fields
                 appointmentDate: document.getElementById('appointment-date').value,
                 appointmentTime: document.getElementById('appointment-time').value,
                 saleValue: document.getElementById('sale-value').value,
@@ -507,7 +897,6 @@
                 closeModal();
             } catch (e) {
                 console.error("Error adding/updating document: ", e);
-                // Optionally show an in-modal error message
             }
         }
         
@@ -518,12 +907,11 @@
             const docId = document.getElementById('prospect-doc-id').value;
             if (!docId) return;
 
-            // Show custom confirmation modal
             deleteConfirmModalEl.classList.remove('hidden');
 
             document.getElementById('confirm-delete-btn').onclick = async () => {
                 deleteConfirmModalEl.classList.add('hidden');
-                closeModal(); // Close the main prospect modal
+                closeModal();
                 await deleteProspect(docId);
             };
 
@@ -553,14 +941,23 @@
         document.getElementById('add-prospect-btn').addEventListener('click', () => openModal(null));
         document.getElementById('close-modal-btn').addEventListener('click', closeModal);
         modalEl.addEventListener('click', (e) => {
-            // Close modal when clicking outside the content area
             if (e.target === modalEl) {
                 closeModal();
             }
         });
-
         formEl.addEventListener('submit', saveProspect);
         deleteBtn.addEventListener('click', handleDeleteConfirmation);
+
+        // --- Auth Event Listeners ---
+        authFormEl.addEventListener('submit', handleAuthForm);
+        toggleAuthModeBtn.addEventListener('click', toggleAuthMode);
+        logoutBtn.addEventListener('click', handleLogout);
+
+        // --- Admin Listeners (NEW) ---
+        adminBtn.addEventListener('click', openAdminModal);
+        document.getElementById('close-admin-modal-btn').addEventListener('click', () => {
+            adminAccessModalEl.classList.add('hidden');
+        });
 
         // --- Initialize the App ---
         initializeFirebase();
