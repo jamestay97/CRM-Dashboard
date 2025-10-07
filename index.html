@@ -3,998 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medicare Agent CRM</title>
+    <title>Auth Loading Example</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Inter font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <!-- Use Inter font -->
     <style>
-        /* Custom styles for the app and font setting */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f7f9fb; /* Light background */
-        }
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.7); /* Darker overlay for login */
-            transition: opacity 0.3s ease;
-        }
-        .prospect-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transform: translateY(-1px);
-        }
-        /* Custom scrollbar for better aesthetics */
-        .custom-scroll::-webkit-scrollbar {
-            width: 8px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background-color: #a8a8a8;
-            border-radius: 10px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-            background: #f0f0f0;
+            background-color: #f7f7f9;
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <!-- Main Application Container -->
-    <div id="app-container" class="min-h-screen flex flex-col hidden">
-        
-        <!-- Header -->
-        <header class="bg-white shadow-md p-4 sticky top-0 z-10">
-            <div class="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto">
-                <h1 class="text-2xl font-bold text-teal-600">Medicare CRM Dashboard</h1>
-                <div class="flex items-center space-x-4 mt-2 md:mt-0">
-                    <span id="user-email" class="text-sm text-gray-700 font-medium">Loading...</span>
-                    <!-- Admin Management Button (Conditionally Shown) -->
-                    <button id="admin-btn" class="text-sm bg-purple-500 text-white px-3 py-1 rounded-full hover:bg-purple-600 transition duration-200 hidden">
-                        Manage Agents
-                    </button>
-                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-3 rounded-lg text-sm transition duration-200">
-                        Logout
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content Area -->
-        <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-700">Prospects & Clients</h2>
-                <button id="add-prospect-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-lg shadow-lg transition duration-200">
-                    + New Prospect
-                </button>
-            </div>
-
-            <!-- Filter and Search Bar -->
-            <div class="flex flex-col md:flex-row gap-4 mb-6">
-                <input type="text" id="search-input" placeholder="Search by name or phone..." class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500 transition duration-150" oninput="filterProspects()">
-                <select id="status-filter" class="w-full md:w-56 p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500 transition duration-150" onchange="filterProspects()">
-                    <option value="">Filter by Status (All)</option>
-                    <option value="Lead">Lead</option>
-                    <option value="Contacted - Needs SOA">Contacted - Needs SOA</option>
-                    <option value="SOA Complete">SOA Complete</option>
-                    <option value="Quote Sent">Quote Sent</option>
-                    <option value="Enrolled - Medigap">Enrolled - Medigap</option>
-                    <option value="Enrolled - MA">Enrolled - MA</option>
-                    <option value="Not Interested">Not Interested</option>
-                </select>
-            </div>
-
-            <!-- Prospect List -->
-            <div id="prospects-list" class="space-y-4">
-                <div id="loading-message" class="text-center text-gray-500 p-8">Loading prospects...</div>
-                <!-- Prospects will be rendered here -->
-            </div>
-        </main>
+    <!-- Loading Spinner Container (Visible initially) -->
+    <div id="loading-spinner" class="fixed inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-50 transition-opacity duration-300">
+        <!-- The Spinner itself -->
+        <div class="w-16 h-16 border-4 border-t-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" role="status" aria-label="Loading"></div>
+        <p class="text-lg text-gray-700 font-semibold">Authenticating user, please wait...</p>
     </div>
 
-    <!-- Login/Signup Modal (Active when logged out) -->
-    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-        <div id="auth-content-wrapper" class="bg-white w-full max-w-md rounded-xl shadow-2xl p-8 transform transition-all">
-            <h3 id="auth-title" class="text-2xl font-bold mb-6 text-teal-600 text-center">Agent Login</h3>
-            <form id="auth-form">
-                <div class="space-y-4">
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Email</span>
-                        <input type="email" id="auth-email" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
-                    </label>
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Password</span>
-                        <input type="password" id="auth-password" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
-                    </label>
-                    <p id="auth-error" class="text-red-500 text-sm hidden"></p>
-                </div>
-                
-                <div class="flex flex-col space-y-3 mt-6">
-                    <button type="submit" id="login-button" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 px-6 rounded-lg shadow-md transition duration-200">
-                        Login
-                    </button>
-                    <button type="button" id="toggle-auth-mode" class="text-sm text-teal-600 hover:text-teal-700 font-medium">
-                        New agent? Click here to Register
-                    </button>
-                </div>
-            </form>
+    <!-- Main Content (Hidden initially) -->
+    <div id="main-content" class="flex flex-1 items-center justify-center p-4 opacity-0 transition-opacity duration-500">
+        <div class="bg-white p-8 md:p-12 rounded-2xl shadow-xl max-w-lg w-full text-center">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome Back!</h1>
+            <p class="text-gray-600 mb-6">You are now authenticated and the main content is displayed.</p>
+            
+            <div id="user-info" class="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
+                <p class="font-medium text-blue-800">Authentication Status:</p>
+                <code class="block mt-2 text-sm text-gray-700 bg-gray-100 p-2 rounded break-all" id="auth-status"></code>
+                <p class="font-medium text-blue-800 mt-3">Your User ID:</p>
+                <code class="block mt-2 text-sm text-gray-700 bg-gray-100 p-2 rounded break-all" id="current-user-id"></code>
+            </div>
+            
+            <button onclick="signOutUser()" class="mt-8 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-lg">Sign Out (Simulated)</button>
         </div>
     </div>
 
-    <!-- Prospect Management Modal -->
-    <div id="prospect-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 modal-overlay">
-        <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl p-6 custom-scroll overflow-y-auto transform transition-all">
-            <h3 id="modal-title" class="text-2xl font-bold mb-6 text-teal-600">New Prospect</h3>
-            <form id="prospect-form">
-                <input type="hidden" id="prospect-doc-id" value="">
-                
-                <!-- Basic Information -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Client Name</span>
-                        <input type="text" id="prospect-name" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
-                    </label>
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Phone Number</span>
-                        <input type="tel" id="prospect-phone" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
-                    </label>
-                    <label class="block md:col-span-2">
-                        <span class="text-gray-700 font-medium">Status</span>
-                        <select id="prospect-status" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
-                            <option value="Lead">Lead</option>
-                            <option value="Contacted - Needs SOA">Contacted - Needs SOA</option>
-                            <option value="SOA Complete">SOA Complete</option>
-                            <option value="Quote Sent">Quote Sent</option>
-                            <option value="Enrolled - Medigap">Enrolled - Medigap</option>
-                            <option value="Enrolled - MA">Enrolled - MA</option>
-                            <option value="Not Interested">Not Interested</option>
-                        </select>
-                    </label>
-                </div>
-                
-                <!-- Notes -->
-                <div class="mb-8">
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Notes</span>
-                        <textarea id="prospect-notes" rows="4" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"></textarea>
-                    </label>
-                </div>
-
-                <!-- Compliance & Product Tracking -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 p-6 bg-teal-50 rounded-xl border border-teal-200">
-                    
-                    <!-- Compliance Section -->
-                    <div>
-                        <h4 class="text-xl font-semibold mb-4 text-teal-800 border-b pb-2">Compliance Tracking</h4>
-                        <div class="space-y-3">
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" id="compliance-recorded" class="form-checkbox h-5 w-5 text-teal-600 rounded">
-                                <span class="text-gray-700">Call Recorded</span>
-                            </label>
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" id="compliance-soa-taken" class="form-checkbox h-5 w-5 text-teal-600 rounded">
-                                <span class="text-gray-700">Scope of Appointment (SOA) Taken</span>
-                            </label>
-                            <label class="block mt-4">
-                                <span class="text-gray-700 font-medium">SOA Date</span>
-                                <input type="date" id="compliance-soa-date" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Product Interest Section -->
-                    <div>
-                        <h4 class="text-xl font-semibold mb-4 text-teal-800 border-b pb-2">Product Interest</h4>
-                        <div class="space-y-3">
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" id="product-medigap" class="form-checkbox h-5 w-5 text-teal-600 rounded">
-                                <span class="text-gray-700">Medicare Supplement (Medigap)</span>
-                            </label>
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" id="product-ma" class="form-checkbox h-5 w-5 text-teal-600 rounded">
-                                <span class="text-gray-700">Medicare Advantage (MA)</span>
-                            </label>
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" id="product-dvh" class="form-checkbox h-5 w-5 text-teal-600 rounded">
-                                <span class="text-gray-700">Dental, Vision, Hearing (DVH)</span>
-                            </label>
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" id="product-hip" class="form-checkbox h-5 w-5 text-teal-600 rounded">
-                                <span class="text-gray-700">Hospital Indemnity Plan (HIP)</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Appointment & Sales Tracking -->
-                <div class="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
-                    <h4 class="text-xl font-semibold mb-4 text-blue-800 border-b pb-2">Appointment & Sales Tracking</h4>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <!-- Appointment Date -->
-                        <label class="block">
-                            <span class="text-gray-700 font-medium">Next Appointment Date</span>
-                            <input type="date" id="appointment-date" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        </label>
-                        
-                        <!-- Appointment Time -->
-                        <label class="block">
-                            <span class="text-gray-700 font-medium">Next Appointment Time</span>
-                            <input type="time" id="appointment-time" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        </label>
-                        
-                        <!-- Sale Value -->
-                        <label class="block">
-                            <span class="text-gray-700 font-medium">Sale Value (Annualized Premium)</span>
-                            <input type="number" id="sale-value" min="0" step="0.01" placeholder="e.g., 1200.00" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        </label>
-                    </div>
-                </div>
-
-
-                <!-- Action Buttons -->
-                <div class="flex justify-between items-center pt-4 border-t border-gray-200">
-                    <button type="button" id="delete-prospect-btn" class="text-red-600 hover:text-red-700 font-medium py-2 px-4 rounded-lg transition duration-200 hidden">
-                        Delete Prospect
-                    </button>
-                    <div class="flex space-x-4">
-                        <button type="button" id="close-modal-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
-                            Cancel
-                        </button>
-                        <button type="submit" id="save-prospect-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-6 rounded-lg shadow-md transition duration-200">
-                            Save Changes
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal (Custom UI for confirm()) -->
-    <div id="delete-confirmation-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-        <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 transform transition-all">
-            <h4 class="text-xl font-bold mb-4 text-red-600">Confirm Deletion</h4>
-            <p class="text-gray-700 mb-6">Are you sure you want to permanently delete this prospect? This action cannot be undone.</p>
-            <div class="flex justify-end space-x-4">
-                <button id="cancel-delete-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
-                    Cancel
-                </button>
-                <button id="confirm-delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
-                    Delete
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Admin Access Management Modal -->
-    <div id="admin-access-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-        <div class="bg-white w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl p-6 custom-scroll overflow-y-auto transform transition-all">
-            <h4 class="2xl font-bold mb-4 text-purple-600 border-b pb-2">Agent Access Management (Admin)</h4>
-            <p class="text-gray-700 mb-4 text-sm">
-                This is a simulated Admin Panel. You can deactivate agent access or change roles by updating their public record.
-            </p>
-            <div id="user-roles-list" class="space-y-3 mt-4">
-                <p class="text-center text-gray-500">Loading user roles...</p>
-            </div>
-            <div class="flex justify-end mt-6">
-                <button id="close-admin-modal-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Firebase Scripts (Must be type="module") -->
+    <!-- Firebase SDK Imports and Initialization -->
     <script type="module">
+        // Import necessary Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
             getAuth, 
-            signInWithEmailAndPassword, 
-            createUserWithEmailAndPassword, 
-            signOut, 
-            onAuthStateChanged,
-            sendEmailVerification, 
-            reload, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged, 
+            signOut 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, deleteDoc, getDocs, setLogLevel, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { 
+            getFirestore, 
+            setLogLevel 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // =======================================================================
-        // IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION OBJECT HERE
-        //            Replace everything inside the curly braces {} with the config 
-        //            you copied from the Firebase Console's "Register app" step.
-        // =======================================================================
-        const YOUR_FIREBASE_CONFIG_OBJECT = {
-            apiKey: "AIzaSyAJdgny5PgiiNEmjiW9D-2I8s8s86IIGuGDw",
-            authDomain: "crm-web-c8dd7.firebaseapp.com",
-            projectId: "crm-web-c8dd7",
-            storageBucket: "crm-web-c8dd7.firebasestorage.app",
-            messagingSenderId: "1006804847425",
-            appId: "1:1006804847425:web:02773a5c430113fa362fc0",
-            measurementId: "G-0X1P0QG4BC"
-        };
-        // =======================================================================
-
-        // Global Firebase variables
-        let app;
-        let db;
-        let auth;
-        let userId = null; 
-        let userEmail = null;
-        let userRole = 'unauthenticated'; 
-        let prospectsList = []; 
-
-        // Firestore Configuration & Setup
-        // Prioritize the global variable if it exists (for internal use), otherwise use the hardcoded config.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'medicare-crm-app-external';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : YOUR_FIREBASE_CONFIG_OBJECT;
-
-        const PROSPECTS_COLLECTION = 'medicare_prospects'; // Private per user
-        const USER_ROLES_COLLECTION = 'user_roles'; // Public for admin management
-
-        // UI Elements
-        const appContainerEl = document.getElementById('app-container');
-        const authModalEl = document.getElementById('auth-modal');
-        const authContentWrapperEl = document.getElementById('auth-content-wrapper');
-        const authFormEl = document.getElementById('auth-form');
-        const authTitleEl = document.getElementById('auth-title');
-        const authErrorEl = document.getElementById('auth-error');
-        const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
-        const userEmailEl = document.getElementById('user-email');
-        const logoutBtn = document.getElementById('logout-btn');
-        const adminBtn = document.getElementById('admin-btn'); 
-        const adminAccessModalEl = document.getElementById('admin-access-modal'); 
-        const userRolesListEl = document.getElementById('user-roles-list'); 
-
-        const prospectListEl = document.getElementById('prospects-list');
-        const loadingMessageEl = document.getElementById('loading-message');
-        const modalEl = document.getElementById('prospect-modal');
-        const deleteConfirmModalEl = document.getElementById('delete-confirmation-modal');
-        const formEl = document.getElementById('prospect-form');
-        const deleteBtn = document.getElementById('delete-prospect-btn');
-
-        let isLoginMode = true;
-        let originalAuthContentHTML = ''; 
-
-        // Status color mapping for better visualization
-        const statusColors = {
-            'Lead': 'bg-blue-100 text-blue-800',
-            'Contacted - Needs SOA': 'bg-yellow-100 text-yellow-800',
-            'SOA Complete': 'bg-green-100 text-green-800',
-            'Quote Sent': 'bg-purple-100 text-purple-800',
-            'Enrolled - Medigap': 'bg-teal-100 text-teal-800',
-            'Enrolled - MA': 'bg-teal-200 text-teal-800',
-            'Not Interested': 'bg-gray-200 text-gray-700',
-        };
+        // IMPORTANT: Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
+        // UI elements
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const mainContent = document.getElementById('main-content');
+        const authStatusElement = document.getElementById('auth-status');
+        const userIdElement = document.getElementById('current-user-id');
+
+        // Initial Firebase and utility variables
+        let app, db, auth;
+
         /**
-         * Returns the public collection reference for user roles.
+         * Updates the UI state by hiding the loading spinner and showing the main content.
+         * @param {string} status The authentication status message.
+         * @param {string} userId The current user's ID.
          */
-        function getRolesCollectionRef() {
-            if (!db) return null;
-            // Data is stored publicly for all users to read (needed for admin list)
-            const collectionPath = `/artifacts/${appId}/public/data/${USER_ROLES_COLLECTION}`;
-            return collection(db, collectionPath);
+        function updateUI(status, userId) {
+            // Update user info display
+            authStatusElement.textContent = status;
+            userIdElement.textContent = userId;
+
+            // Hide spinner with a fade out effect
+            loadingSpinner.style.opacity = '0';
+            setTimeout(() => {
+                loadingSpinner.classList.add('hidden');
+                // Show main content with a fade in effect
+                mainContent.style.opacity = '1';
+            }, 300); // Wait for the transition duration
         }
 
         /**
-         * Restores the auth modal content to the original login/register form.
+         * Initializes Firebase and handles user authentication.
          */
-        function restoreAuthModalContent() {
-            if (originalAuthContentHTML) {
-                authContentWrapperEl.innerHTML = originalAuthContentHTML;
-                
-                // Re-bind listeners for the restored elements
-                document.getElementById('auth-form').addEventListener('submit', handleAuthForm);
-                document.getElementById('toggle-auth-mode').addEventListener('click', toggleAuthMode);
-                
-                isLoginMode = true; 
-                toggleAuthMode();
-            }
-        }
-
-        /**
-         * Fetches the user's role and status from the public collection.
-         * @param {string} uid - The user's Firebase UID.
-         * @returns {Object|null} The user role data, or null.
-         */
-        async function fetchUserRole(uid) {
-            const rolesRef = getRolesCollectionRef();
-            if (!rolesRef) return null;
-            
-            try {
-                const docRef = doc(rolesRef, uid);
-                const roleSnapshot = await getDoc(docRef);
-
-                if (roleSnapshot.exists()) {
-                    return roleSnapshot.data();
-                } else {
-                    console.warn(`User role document not found for UID: ${uid}. Defaulting to agent/active.`);
-                    // A user without a role doc should ideally be treated as active for now.
-                    return { role: 'agent', status: 'active' }; 
-                }
-            } catch (e) {
-                console.error("Error fetching user role:", e);
-                return { role: 'agent', status: 'active' };
-            }
-        }
-
-        /**
-         * Initializes Firebase and sets up authentication listener.
-         */
-        function initializeFirebase() {
-             // Check if the configuration is properly set up outside of the canvas
-            if (!firebaseConfig.projectId) {
-                authErrorEl.textContent = 'Configuration Error: "projectId" is missing from the Firebase configuration object.';
-                authErrorEl.classList.remove('hidden');
+        async function initializeAppAndAuth() {
+            if (!firebaseConfig) {
+                console.error("Firebase configuration is missing.");
+                updateUI("Error: Firebase Config Missing", "N/A");
                 return;
             }
 
             try {
-                setLogLevel('Debug');
-                // LOGGING THE CONFIG FOR DEBUGGING THE USER'S REPORTED ERROR
-                console.log('Attempting to initialize Firebase with config:', firebaseConfig); 
-                
+                // Initialize Firebase
                 app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
                 auth = getAuth(app);
+                db = getFirestore(app);
                 
-                originalAuthContentHTML = authContentWrapperEl.innerHTML;
+                // Optional: set log level for debugging Firestore issues
+                setLogLevel('Debug');
                 
+                // 1. Listen for auth state changes
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        
-                        // 1. Check Email Verification
-                        if (!user.emailVerified) {
-                            appContainerEl.classList.add('hidden');
-                            authModalEl.classList.remove('hidden'); 
-                            
-                            const currentEmail = user.email || 'your email';
-
-                            authContentWrapperEl.innerHTML = `
-                                <h3 class="text-2xl font-bold mb-4 text-orange-600 text-center">Email Verification Required</h3>
-                                <p class="text-gray-700 mb-4">
-                                    Hello, <span class="font-bold text-teal-600">${currentEmail}</span>. Please click the verification link sent to your inbox (check spam!).
-                                </p>
-                                <p id="verification-message" class="text-sm text-red-500 mb-6"></p>
-
-                                <div class="flex flex-col space-y-3">
-                                    <button type="button" id="resend-verification" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 rounded-lg shadow-md transition duration-200">
-                                        Resend Verification Email
-                                    </button>
-                                    <button type="button" id="reload-verification-status" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 rounded-lg shadow-md transition duration-200">
-                                        I Have Verified My Email (Click to Reload)
-                                    </button>
-                                    <button type="button" id="force-logout-btn" class="text-sm text-gray-500 hover:text-red-500">
-                                        Log Out
-                                    </button>
-                                </div>
-                            `;
-                            
-                            document.getElementById('force-logout-btn').addEventListener('click', handleLogout);
-                            
-                            document.getElementById('resend-verification').addEventListener('click', async () => {
-                                try {
-                                    await sendEmailVerification(user);
-                                    document.getElementById('verification-message').textContent = 'Verification email sent successfully! Please check your inbox.';
-                                    document.getElementById('verification-message').classList.remove('text-red-500');
-                                    document.getElementById('verification-message').classList.add('text-green-500');
-                                } catch (e) {
-                                    document.getElementById('verification-message').textContent = 'Error sending email. Please try again later.';
-                                    document.getElementById('verification-message').classList.remove('text-green-500');
-                                    document.getElementById('verification-message').classList.add('text-red-500');
-                                }
-                            });
-
-                            document.getElementById('reload-verification-status').addEventListener('click', async () => {
-                                try {
-                                    await reload(user);
-                                } catch (e) {
-                                    console.error("Error reloading user status:", e);
-                                    document.getElementById('verification-message').textContent = 'Error reloading status. Try logging out and back in.';
-                                    document.getElementById('verification-message').classList.remove('text-green-500');
-                                    document.getElementById('verification-message').classList.add('text-red-500');
-                                }
-                            });
-
-                            return;
-                        }
-                        
-                        // 2. Check Role/Status for Access Control
-                        const roleData = await fetchUserRole(user.uid);
-                        userRole = roleData.role;
-                        
-                        if (roleData.status === 'inactive') {
-                            // User is verified but blocked by admin
-                            authContentWrapperEl.innerHTML = `
-                                <h3 class="text-2xl font-bold mb-4 text-red-600 text-center">Access Blocked</h3>
-                                <p class="text-gray-700 mb-6">
-                                    Your account (<span class="font-bold text-teal-600">${user.email}</span>) has been marked as inactive by an administrator. Please contact your manager for access renewal.
-                                </p>
-                                <button type="button" id="force-logout-btn-blocked" class="bg-red-500 hover:bg-red-600 text-white font-medium py-3 rounded-lg shadow-md transition duration-200 w-full">
-                                    Log Out
-                                </button>
-                            `;
-                            document.getElementById('force-logout-btn-blocked').addEventListener('click', handleLogout);
-                            await signOut(auth); // Log them out after showing the message
-                            return;
-                        }
-                        
-                        // 3. User is verified and active (Grant Access)
-                        userId = user.uid;
-                        userEmail = user.email;
-                        userEmailEl.textContent = userEmail;
-                        
-                        // Show/Hide Admin button based on role
-                        adminBtn.classList.toggle('hidden', userRole !== 'admin');
-                        
-                        // Show main app, hide auth modal
-                        authModalEl.classList.add('hidden');
-                        appContainerEl.classList.remove('hidden');
-                        setupRealtimeListener();
-
+                        // User is signed in (either via custom token or anonymously)
+                        const status = user.isAnonymous ? "Successfully Signed In (Anonymous)" : "Successfully Signed In (Custom Token)";
+                        updateUI(status, user.uid);
                     } else {
-                        // Logged out state
-                        userId = null;
-                        userEmail = null;
-                        userRole = 'unauthenticated';
-                        
-                        restoreAuthModalContent();
-                        
-                        adminBtn.classList.add('hidden');
-                        appContainerEl.classList.add('hidden');
-                        authModalEl.classList.remove('hidden');
-                        prospectListEl.innerHTML = '';
-                        loadingMessageEl.textContent = 'Please log in to view prospects.';
+                        // No user is signed in. Attempt to sign in.
+                        console.log("No user signed in. Attempting sign-in...");
+                        try {
+                            if (initialAuthToken) {
+                                // Attempt sign-in with the custom token
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                // Fallback to anonymous sign-in
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            console.error("Authentication failed:", error);
+                            // If sign-in fails, still hide the spinner and show an error message
+                            updateUI(`Authentication Failed: ${error.code}`, "N/A");
+                        }
                     }
                 });
 
             } catch (error) {
-                console.error("Error during Firebase initialization or authentication:", error);
-                authErrorEl.textContent = `App Error: ${error.message}`;
-                authErrorEl.classList.remove('hidden');
+                console.error("Firebase initialization failed:", error);
+                updateUI(`Initialization Error: ${error.message}`, "N/A");
             }
         }
 
-        /**
-         * Toggles between Login and Registration modes.
-         */
-        function toggleAuthMode() {
-            isLoginMode = !isLoginMode;
-            authTitleEl.textContent = isLoginMode ? 'Agent Login' : 'Agent Registration';
-            toggleAuthModeBtn.textContent = isLoginMode ? 'New agent? Click here to Register' : 'Already have an account? Click here to Login';
-            document.getElementById('login-button').textContent = isLoginMode ? 'Login' : 'Register';
-            authErrorEl.classList.add('hidden');
-            document.getElementById('auth-form').reset();
-        }
-
-        /**
-         * Handles Login or Registration based on current mode.
-         */
-        async function handleAuthForm(event) {
-            event.preventDefault();
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            
-            authErrorEl.classList.add('hidden');
-
-            try {
-                if (isLoginMode) {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } else {
-                    // --- Registration with Role Assignment ---
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    const newUid = userCredential.user.uid;
-                    const rolesRef = getRolesCollectionRef();
-                    
-                    // 1. Determine Role (Admin or Agent)
-                    // Check if any role document exists yet (to determine the first user)
-                    const existingRolesSnapshot = await getDocs(rolesRef);
-                    const initialRole = existingRolesSnapshot.empty ? 'admin' : 'agent';
-                    
-                    // 2. Set public role document
-                    await setDoc(doc(rolesRef, newUid), {
-                        email: email,
-                        role: initialRole,
-                        status: 'active',
-                        createdAt: Date.now()
-                    });
-                    
-                    // 3. Send verification email
-                    await sendEmailVerification(userCredential.user);
-                    
-                    // Show success message and switch to login mode
-                    let successMessage = `Registration successful! You are a standard agent. A verification email has been sent to your inbox (check spam!)—please verify your address before logging in.`;
-                    if (initialRole === 'admin') {
-                        successMessage = `Admin Registration Successful! You are the first user and have been assigned the 'admin' role. A verification email has been sent to your inbox—please verify before logging in.`;
-                    }
-                    
-                    authErrorEl.textContent = successMessage;
-                    authErrorEl.classList.remove('hidden');
-                    
-                    isLoginMode = true;
-                    document.getElementById('auth-form').reset();
-                    toggleAuthMode();
-                    
-                    return; 
-                }
-            } catch (error) {
-                console.error("Authentication error:", error);
-                let errorMessage = "An unknown error occurred. Ensure your Firebase configuration is correct and Email/Password Sign-in is enabled.";
-                if (error.code === 'auth/weak-password') {
-                    errorMessage = 'Password should be at least 6 characters.';
-                } else if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = 'That email is already registered.';
-                } else if (error.code === 'auth/invalid-email' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    errorMessage = 'Invalid email or password.';
-                } else if (error.code === 'auth/operation-not-allowed') {
-                    errorMessage = 'Email/Password sign-in is disabled. Please enable it in your Firebase Console under Authentication.';
-                }
-                authErrorEl.textContent = errorMessage;
-                authErrorEl.classList.remove('hidden');
-            }
-        }
-
-        /**
-         * Handles user logout.
-         */
-        async function handleLogout() {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Logout error:", error);
-            }
-        }
+        // Start the application setup
+        initializeAppAndAuth();
         
-        /**
-         * Opens the Admin Access Management Modal and sets up the listener.
-         */
-        function openAdminModal() {
-            if (userRole !== 'admin') return; // Safety check
-            adminAccessModalEl.classList.remove('hidden');
-            
-            const rolesRef = getRolesCollectionRef();
-            if (!rolesRef) return;
-
-            // Use onSnapshot to keep the Admin list real-time
-            onSnapshot(rolesRef, (snapshot) => {
-                const userRolesData = [];
-                snapshot.forEach((doc) => {
-                    userRolesData.push({ uid: doc.id, ...doc.data() });
-                });
-                renderUserRoles(userRolesData);
-            }, (error) => {
-                console.error("Error fetching user roles for admin:", error);
-                userRolesListEl.innerHTML = `<div class="text-red-600">Error loading users: ${error.message}</div>`;
-            });
-        }
-        
-        /**
-         * Renders the list of users and their access controls in the Admin Modal.
-         * @param {Array<Object>} users - List of user role data.
-         */
-        function renderUserRoles(users) {
-            userRolesListEl.innerHTML = '';
-            
-            users.forEach(user => {
-                const isActive = user.status === 'active';
-                const isCurrentUser = user.uid === userId;
-                
-                const card = document.createElement('div');
-                card.className = 'flex flex-col md:flex-row items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm';
-                card.innerHTML = `
-                    <div class="mb-2 md:mb-0 w-full md:w-1/2">
-                        <p class="font-medium text-gray-800 break-words">${user.email || 'N/A'}${isCurrentUser ? ' (You)' : ''}</p>
-                        <p class="text-xs text-gray-500">UID: ${user.uid}</p>
-                    </div>
-                    <div class="flex flex-col md:flex-row md:space-x-4 space-y-2 md:space-y-0 w-full md:w-1/2 justify-end">
-                        <span class="text-sm font-semibold px-2 py-1 rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'} min-w-[80px] text-center">
-                            ${user.role.toUpperCase()}
-                        </span>
-                        
-                        <button 
-                            id="status-toggle-${user.uid}"
-                            class="text-sm font-medium py-1 px-3 rounded-lg transition duration-200 w-full md:w-auto ${isActive ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}"
-                            ${isCurrentUser ? 'disabled' : ''}
-                            title="${isCurrentUser ? 'Cannot deactivate yourself' : ''}"
-                        >
-                            ${isActive ? 'Active' : 'Inactive'}
-                        </button>
-                    </div>
-                `;
-                
-                // Add listener to toggle status
-                if (!isCurrentUser) {
-                    card.querySelector(`#status-toggle-${user.uid}`).addEventListener('click', () => {
-                        const newStatus = isActive ? 'inactive' : 'active';
-                        toggleUserStatus(user.uid, newStatus);
-                    });
+        // Expose signOutUser globally for the button click handler
+        window.signOutUser = async () => {
+             if (auth) {
+                try {
+                    await signOut(auth);
+                    // The onAuthStateChanged listener handles the UI update after sign out
+                    loadingSpinner.classList.remove('hidden');
+                    loadingSpinner.style.opacity = '1';
+                    mainContent.style.opacity = '0';
+                    authStatusElement.textContent = "Signed Out. Re-authenticating...";
+                    userIdElement.textContent = "N/A";
+                } catch (error) {
+                    console.error("Error signing out:", error);
                 }
-
-                userRolesListEl.appendChild(card);
-            });
-        }
-        
-        /**
-         * Toggles the status of a user's account (Active/Inactive).
-         * @param {string} targetUid - The UID of the user to update.
-         * @param {string} newStatus - The new status ('active' or 'inactive').
-         */
-        async function toggleUserStatus(targetUid, newStatus) {
-            const rolesRef = getRolesCollectionRef();
-            if (!rolesRef) return;
-            
-            try {
-                const userDocRef = doc(rolesRef, targetUid);
-                await setDoc(userDocRef, { status: newStatus }, { merge: true });
-                console.log(`User ${targetUid} status updated to ${newStatus}`);
-                // The onSnapshot listener in openAdminModal will handle the re-render
-            } catch (e) {
-                console.error("Error updating user status:", e);
             }
-        }
-        
-        /**
-         * Returns the path reference for the prospects collection based on the authenticated user.
-         */
-        function getProspectsCollectionRef() {
-            if (!db || !userId) return null;
-            // Data is stored privately per user
-            const collectionPath = `/artifacts/${appId}/users/${userId}/${PROSPECTS_COLLECTION}`;
-            return collection(db, collectionPath);
-        }
-
-        /**
-         * Sets up the real-time Firestore listener for prospects.
-         */
-        function setupRealtimeListener() {
-            const prospectsRef = getProspectsCollectionRef();
-            if (!prospectsRef) {
-                console.error("Collection reference is null. Cannot set up listener.");
-                return;
-            }
-
-            loadingMessageEl.classList.remove('hidden');
-
-            onSnapshot(prospectsRef, (snapshot) => {
-                loadingMessageEl.classList.add('hidden');
-                prospectsList = [];
-                snapshot.forEach((doc) => {
-                    prospectsList.push({ id: doc.id, ...doc.data() });
-                });
-
-                prospectsList.sort((a, b) => (b.lastContacted || 0) - (a.lastContacted || 0));
-
-                renderProspects();
-
-            }, (error) => {
-                console.error("Error fetching documents: ", error);
-                prospectListEl.innerHTML = `<div class="text-red-600 p-4 bg-red-50 rounded-lg">Error loading data: ${error.message}</div>`;
-            });
-        }
-
-        /**
-         * Renders the prospect list, applying search and filter criteria.
-         */
-        window.filterProspects = function() {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const statusFilter = document.getElementById('status-filter').value;
-
-            const filteredList = prospectsList.filter(prospect => {
-                const nameMatch = prospect.name.toLowerCase().includes(searchTerm);
-                const phoneMatch = prospect.phone.toLowerCase().includes(searchTerm);
-                const statusMatch = !statusFilter || prospect.status === statusFilter;
-                return (nameMatch || phoneMatch) && statusMatch;
-            });
-
-            renderProspects(filteredList);
-        }
-
-        /**
-         * Renders the prospect list to the DOM.
-         * @param {Array} list - The list of prospects to render (defaults to the full list).
-         */
-        function renderProspects(list = prospectsList) {
-            prospectListEl.innerHTML = '';
-            
-            if (list.length === 0) {
-                prospectListEl.innerHTML = `<p class="text-center text-gray-500 p-8">No prospects found. Click 'New Prospect' to add one!</p>`;
-                return;
-            }
-
-            list.forEach(prospect => {
-                const date = new Date(prospect.lastContacted || Date.now()).toLocaleDateString();
-                const statusClass = statusColors[prospect.status] || 'bg-gray-100 text-gray-800';
-
-                const prospectCard = document.createElement('div');
-                prospectCard.className = 'prospect-card bg-white p-4 md:p-6 rounded-xl shadow hover:shadow-lg transition duration-200 cursor-pointer border-l-4 border-teal-500';
-                prospectCard.dataset.id = prospect.id;
-                
-                const saleText = prospect.saleValue ? 
-                                `<span class="text-green-600 font-bold ml-4">Sale: $${parseFloat(prospect.saleValue).toFixed(2)} AP</span>` : '';
-
-                prospectCard.innerHTML = `
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                        <div class="mb-2 md:mb-0">
-                            <p class="text-lg font-semibold text-gray-800">${prospect.name}</p>
-                            <p class="text-sm text-gray-500">${prospect.phone}</p>
-                        </div>
-                        <div class="flex flex-col md:flex-row md:space-x-4 space-y-2 md:space-y-0 text-sm">
-                            <span class="${statusClass} text-xs font-medium px-2.5 py-1 rounded-full text-center min-w-[150px]">${prospect.status}</span>
-                            <span class="text-gray-500 text-xs mt-1 md:mt-0">Last Contacted: ${date} ${saleText}</span>
-                        </div>
-                    </div>
-                `;
-                prospectCard.addEventListener('click', () => openModal(prospect));
-                prospectListEl.appendChild(prospectCard);
-            });
-        }
-
-        /**
-         * Opens the prospect management modal, either for a new or existing record.
-         * @param {Object} prospectData - The prospect data object, or null for a new prospect.
-         */
-        function openModal(prospectData = null) {
-            formEl.reset();
-            let isEditing = !!prospectData;
-            
-            document.getElementById('modal-title').textContent = isEditing ? 'Edit Prospect' : 'New Prospect';
-            document.getElementById('prospect-doc-id').value = isEditing ? prospectData.id : '';
-            
-            deleteBtn.classList.toggle('hidden', !isEditing);
-            
-            if (isEditing) {
-                document.getElementById('prospect-name').value = prospectData.name || '';
-                document.getElementById('prospect-phone').value = prospectData.phone || '';
-                document.getElementById('prospect-status').value = prospectData.status || 'Lead';
-                document.getElementById('prospect-notes').value = prospectData.notes || '';
-
-                const compliance = prospectData.compliance || {};
-                document.getElementById('compliance-recorded').checked = !!compliance.recorded;
-                document.getElementById('compliance-soa-taken').checked = !!compliance.soaTaken;
-                document.getElementById('compliance-soa-date').value = compliance.soaDate || '';
-
-                const products = prospectData.products || {};
-                document.getElementById('product-medigap').checked = !!products.medigap;
-                document.getElementById('product-ma').checked = !!products.ma;
-                document.getElementById('product-dvh').checked = !!products.dvh;
-                document.getElementById('product-hip').checked = !!products.hip;
-
-                document.getElementById('appointment-date').value = prospectData.appointmentDate || '';
-                document.getElementById('appointment-time').value = prospectData.appointmentTime || '';
-                document.getElementById('sale-value').value = prospectData.saleValue || '';
-            }
-
-            modalEl.classList.remove('hidden');
-        }
-
-        /**
-         * Closes the prospect management modal.
-         */
-        function closeModal() {
-            modalEl.classList.add('hidden');
-            formEl.reset();
-        }
-
-        /**
-         * Saves the prospect data to Firestore (add or update).
-         */
-        async function saveProspect(event) {
-            event.preventDefault();
-            
-            const docId = document.getElementById('prospect-doc-id').value;
-            const isEditing = !!docId;
-
-            const name = document.getElementById('prospect-name').value;
-            if (!name) return console.error("Name is required.");
-
-            const prospectData = {
-                name: name,
-                phone: document.getElementById('prospect-phone').value,
-                status: document.getElementById('prospect-status').value,
-                notes: document.getElementById('prospect-notes').value,
-                lastContacted: Date.now(),
-                
-                appointmentDate: document.getElementById('appointment-date').value,
-                appointmentTime: document.getElementById('appointment-time').value,
-                saleValue: document.getElementById('sale-value').value,
-
-                compliance: {
-                    recorded: document.getElementById('compliance-recorded').checked,
-                    soaTaken: document.getElementById('compliance-soa-taken').checked,
-                    soaDate: document.getElementById('compliance-soa-date').value,
-                },
-                products: {
-                    medigap: document.getElementById('product-medigap').checked,
-                    ma: document.getElementById('product-ma').checked,
-                    dvh: document.getElementById('product-dvh').checked,
-                    hip: document.getElementById('product-hip').checked,
-                }
-            };
-
-            const prospectsRef = getProspectsCollectionRef();
-            if (!prospectsRef) return;
-
-            try {
-                if (isEditing) {
-                    const docRef = doc(prospectsRef, docId);
-                    await setDoc(docRef, prospectData);
-                    console.log("Document updated with ID: ", docId);
-                } else {
-                    await addDoc(prospectsRef, prospectData);
-                    console.log("New document added.");
-                }
-                
-                // === FIX APPLIED HERE: Ensure modal closes on successful save ===
-                closeModal(); 
-
-            } catch (e) {
-                console.error("Error adding/updating document: ", e);
-            }
-        }
-        
-        /**
-         * Deletes the prospect after confirmation.
-         */
-        function handleDeleteConfirmation() {
-            const docId = document.getElementById('prospect-doc-id').value;
-            if (!docId) return;
-
-            deleteConfirmModalEl.classList.remove('hidden');
-
-            document.getElementById('confirm-delete-btn').onclick = async () => {
-                deleteConfirmModalEl.classList.add('hidden');
-                closeModal();
-                await deleteProspect(docId);
-            };
-
-            document.getElementById('cancel-delete-btn').onclick = () => {
-                deleteConfirmModalEl.classList.add('hidden');
-            };
-        }
-
-        /**
-         * Performs the actual delete operation in Firestore.
-         * @param {string} docId - The ID of the document to delete.
-         */
-        async function deleteProspect(docId) {
-            const prospectsRef = getProspectsCollectionRef();
-            if (!prospectsRef) return;
-            
-            try {
-                const docRef = doc(prospectsRef, docId);
-                await deleteDoc(docRef);
-                console.log("Document successfully deleted!");
-            } catch (e) {
-                console.error("Error deleting document: ", e);
-            }
-        }
-
-        // --- Event Listeners ---
-        document.getElementById('add-prospect-btn').addEventListener('click', () => openModal(null));
-        document.getElementById('close-modal-btn').addEventListener('click', closeModal);
-        modalEl.addEventListener('click', (e) => {
-            if (e.target === modalEl) {
-                closeModal();
-            }
-        });
-        formEl.addEventListener('submit', saveProspect);
-        deleteBtn.addEventListener('click', handleDeleteConfirmation);
-
-        // --- Auth Event Listeners ---
-        authFormEl.addEventListener('submit', handleAuthForm);
-        toggleAuthModeBtn.addEventListener('click', toggleAuthMode);
-        logoutBtn.addEventListener('click', handleLogout);
-
-        // --- Admin Listeners (NEW) ---
-        adminBtn.addEventListener('click', openAdminModal);
-        document.getElementById('close-admin-modal-btn').addEventListener('click', () => {
-            adminAccessModalEl.classList.add('hidden');
-        });
-
-        // --- Initialize the App ---
-        initializeFirebase();
+        };
 
     </script>
 </body>
 </html>
-
