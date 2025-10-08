@@ -7,97 +7,117 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .modal-overlay { background-color: rgba(0, 0, 0, 0.7); }
-        .prospect-card:hover { transform: translateY(-2px); transition: all 0.2s; }
+        .status-lead { background-color: #dbeafe; color: #1e40af; }
+        .status-contacted { background-color: #fef3c7; color: #d97706; }
+        .status-soa { background-color: #dcfce7; color: #166534; }
+        .status-quote { background-color: #f3e8ff; color: #7c3aed; }
+        .status-enrolled { background-color: #ccfbf1; color: #0f766e; }
+        .status-not-interested { background-color: #f1f5f9; color: #64748b; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50">
     <!-- Main Application Container -->
     <div id="app-container" class="min-h-screen flex flex-col hidden">
         <!-- Header -->
-        <header class="bg-white shadow-md p-4 sticky top-0 z-10">
-            <div class="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto">
-                <h1 class="text-2xl font-bold text-teal-600">Medicare CRM Dashboard</h1>
-                <div class="flex items-center space-x-4 mt-2 md:mt-0">
-                    <span id="user-email" class="text-sm text-gray-700 font-medium">Loading...</span>
-                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-3 rounded-lg text-sm transition duration-200">
-                        Logout
-                    </button>
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-teal-600">Medicare CRM</h1>
+                        <nav class="ml-8 flex space-x-8">
+                            <a href="#" class="text-teal-600 border-b-2 border-teal-600 px-3 py-2 text-sm font-medium">Dashboard</a>
+                        </nav>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="user-email" class="text-sm text-gray-600"></span>
+                        <button id="logout-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition duration-200">
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
 
-        <!-- Main Content Area -->
-        <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-700">Prospects & Clients</h2>
-                <button id="add-prospect-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-lg shadow-lg transition duration-200">
-                    + New Prospect
-                </button>
-            </div>
-
-            <!-- Prospect List -->
-            <div id="prospects-list" class="space-y-4">
-                <div id="loading-message" class="text-center text-gray-500 p-8">Loading prospects...</div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Login/Signup Modal -->
-    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-        <div class="bg-white w-full max-w-md rounded-xl shadow-2xl p-8">
-            <h3 id="auth-title" class="text-2xl font-bold mb-6 text-teal-600 text-center">Agent Login</h3>
-            
-            <!-- Status Message -->
-            <div id="status-message" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg hidden">
-                <p class="text-green-700 text-sm"></p>
-            </div>
-
-            <form id="auth-form">
-                <div class="space-y-4">
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Email</span>
-                        <input type="email" id="auth-email" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="your@email.com">
-                    </label>
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Password</span>
-                        <input type="password" id="auth-password" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="Your password">
-                    </label>
-                    <p id="auth-error" class="text-red-500 text-sm text-center hidden"></p>
+        <!-- Main Content -->
+        <main class="flex-1 py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-blue-600 text-sm font-bold" id="total-leads">0</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Total Leads</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-green-600 text-sm font-bold" id="enrolled-leads">0</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Enrolled</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-yellow-600 text-sm font-bold" id="active-leads">0</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Active Leads</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-red-600 text-sm font-bold" id="conversion-rate">0%</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Conversion Rate</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex flex-col space-y-3 mt-6">
-                    <button type="submit" id="login-button" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 px-6 rounded-lg shadow-md transition duration-200">
-                        Login
-                    </button>
-                    <button type="button" id="toggle-auth-mode" class="text-sm text-teal-600 hover:text-teal-700 font-medium">
-                        New agent? Click here to Register
+                <!-- Action Bar -->
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Prospects & Clients</h2>
+                        <p class="text-gray-600 mt-1">Manage your Medicare leads and track enrollments</p>
+                    </div>
+                    <button id="add-prospect-btn" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-semibold shadow-sm transition duration-200 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add New Prospect
                     </button>
                 </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Prospect Management Modal -->
-    <div id="prospect-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 modal-overlay">
-        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl p-6">
-            <h3 id="modal-title" class="text-2xl font-bold mb-6 text-teal-600">New Prospect</h3>
-            <form id="prospect-form">
-                <input type="hidden" id="prospect-doc-id" value="">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Client Name *</span>
-                        <input type="text" id="prospect-name" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
-                    </label>
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Phone Number</span>
-                        <input type="tel" id="prospect-phone" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
-                    </label>
-                    <label class="block md:col-span-2">
-                        <span class="text-gray-700 font-medium">Status</span>
-                        <select id="prospect-status" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                <!-- Search and Filter -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <input type="text" id="search-input" placeholder="Search by name or phone..." 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                        </div>
+                        <select id="status-filter" class="w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="">All Statuses</option>
                             <option value="Lead">Lead</option>
                             <option value="Contacted - Needs SOA">Contacted - Needs SOA</option>
                             <option value="SOA Complete">SOA Complete</option>
@@ -106,46 +126,118 @@
                             <option value="Enrolled - MA">Enrolled - MA</option>
                             <option value="Not Interested">Not Interested</option>
                         </select>
-                    </label>
+                    </div>
+                </div>
+
+                <!-- Prospects List -->
+                <div id="prospects-list" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div id="loading-message" class="text-center text-gray-500 p-12">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                        Loading prospects...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Login/Signup Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-2xl p-8">
+            <div class="text-center mb-2">
+                <h1 class="text-3xl font-bold text-teal-600">Medicare CRM</h1>
+                <p class="text-gray-600 mt-2">Agent Portal</p>
+            </div>
+            
+            <h3 id="auth-title" class="text-xl font-semibold mb-6 text-gray-900 text-center">Sign in to your account</h3>
+
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+                    <input type="email" id="auth-email" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200"
+                           placeholder="Enter your email">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="auth-password" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200"
+                           placeholder="Enter your password">
+                </div>
+                
+                <div id="auth-error" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p id="error-message" class="text-red-700 text-sm text-center"></p>
+                </div>
+
+                <button type="submit" id="login-button" 
+                        class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-lg font-semibold shadow-sm transition duration-200">
+                    Sign in
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <button id="toggle-auth-mode" class="text-teal-600 hover:text-teal-700 text-sm font-medium">
+                    Don't have an account? Sign up
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prospect Management Modal -->
+    <div id="prospect-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">Add New Prospect</h3>
+            </div>
+            
+            <form id="prospect-form" class="p-6">
+                <input type="hidden" id="prospect-doc-id" value="">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Client Name *</label>
+                        <input type="text" id="prospect-name" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" id="prospect-phone" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select id="prospect-status" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="Lead">Lead</option>
+                            <option value="Contacted - Needs SOA">Contacted - Needs SOA</option>
+                            <option value="SOA Complete">SOA Complete</option>
+                            <option value="Quote Sent">Quote Sent</option>
+                            <option value="Enrolled - Medigap">Enrolled - Medigap</option>
+                            <option value="Enrolled - MA">Enrolled - MA</option>
+                            <option value="Not Interested">Not Interested</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="mb-6">
-                    <label class="block">
-                        <span class="text-gray-700 font-medium">Notes</span>
-                        <textarea id="prospect-notes" rows="4" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"></textarea>
-                    </label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                    <textarea id="prospect-notes" rows="4" 
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                              placeholder="Add any notes about this prospect..."></textarea>
                 </div>
 
-                <div class="flex justify-between items-center pt-4 border-t border-gray-200">
-                    <button type="button" id="delete-prospect-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 hidden">
+                <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                    <button type="button" id="delete-prospect-btn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition duration-200 hidden">
                         Delete Prospect
                     </button>
-                    <div class="flex space-x-4 ml-auto">
-                        <button type="button" id="close-modal-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
+                    <div class="flex space-x-3 ml-auto">
+                        <button type="button" id="close-modal-btn" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition duration-200">
                             Cancel
                         </button>
-                        <button type="submit" id="save-prospect-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-6 rounded-lg shadow-md transition duration-200">
+                        <button type="submit" id="save-prospect-btn" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition duration-200">
                             Save Prospect
                         </button>
                     </div>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-        <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6">
-            <h3 class="text-xl font-bold mb-4 text-red-600">Confirm Delete</h3>
-            <p class="text-gray-700 mb-6">Are you sure you want to delete this prospect? This action cannot be undone.</p>
-            <div class="flex justify-end space-x-4">
-                <button id="cancel-delete-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
-                    Cancel
-                </button>
-                <button id="confirm-delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
-                    Delete
-                </button>
-            </div>
         </div>
     </div>
 
@@ -172,7 +264,7 @@ import {
     deleteDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Your Firebase Configuration
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyCxtKpErTBR9KNMSOumFoApxo1oK9dcMM0",
     authDomain: "crm2-agents.firebaseapp.com",
@@ -182,7 +274,7 @@ const firebaseConfig = {
     appId: "1:730895877711:web:2df0461745813122f38c3a"
 };
 
-console.log("Initializing Firebase with project: crm2-agents");
+console.log("Initializing Medicare CRM...");
 
 try {
     // Initialize Firebase
@@ -190,12 +282,7 @@ try {
     const auth = getAuth(app);
     const db = getFirestore(app);
     
-    console.log("✅ Firebase initialized successfully!");
-
-    // Show success message
-    const statusMessage = document.getElementById('status-message');
-    statusMessage.querySelector('p').textContent = '✅ Connected to Firebase! You can now register and login.';
-    statusMessage.classList.remove('hidden');
+    console.log("✅ CRM initialized successfully!");
 
     // State variables
     let currentUser = null;
@@ -219,9 +306,14 @@ try {
     const prospectForm = document.getElementById('prospect-form');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const deleteProspectBtn = document.getElementById('delete-prospect-btn');
-    const deleteConfirmModal = document.getElementById('delete-confirm-modal');
-    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+
+    // Stats elements
+    const totalLeadsEl = document.getElementById('total-leads');
+    const enrolledLeadsEl = document.getElementById('enrolled-leads');
+    const activeLeadsEl = document.getElementById('active-leads');
+    const conversionRateEl = document.getElementById('conversion-rate');
 
     // Event Listeners
     authForm.addEventListener('submit', handleAuth);
@@ -230,16 +322,13 @@ try {
     addProspectBtn.addEventListener('click', () => openProspectModal());
     closeModalBtn.addEventListener('click', closeProspectModal);
     prospectForm.addEventListener('submit', handleProspectSubmit);
-    deleteProspectBtn.addEventListener('click', showDeleteConfirmation);
-    cancelDeleteBtn.addEventListener('click', closeDeleteConfirmModal);
-    confirmDeleteBtn.addEventListener('click', handleDeleteProspect);
+    deleteProspectBtn.addEventListener('click', handleDeleteProspect);
+    searchInput.addEventListener('input', filterProspects);
+    statusFilter.addEventListener('change', filterProspects);
     
     // Modal backdrop clicks
     prospectModal.addEventListener('click', (e) => {
         if (e.target === prospectModal) closeProspectModal();
-    });
-    deleteConfirmModal.addEventListener('click', (e) => {
-        if (e.target === deleteConfirmModal) closeDeleteConfirmModal();
     });
 
     // Auth State Listener
@@ -263,7 +352,6 @@ try {
     // Auth Handler
     async function handleAuth(e) {
         e.preventDefault();
-        console.log("Auth form submitted");
         
         const email = document.getElementById('auth-email').value;
         const password = document.getElementById('auth-password').value;
@@ -276,25 +364,17 @@ try {
 
         // Show loading state
         button.disabled = true;
-        button.textContent = isLoginMode ? 'Signing in...' : 'Registering...';
+        button.textContent = isLoginMode ? 'Signing in...' : 'Creating account...';
         authError.classList.add('hidden');
 
         try {
-            console.log(`Attempting ${isLoginMode ? 'login' : 'registration'} for:`, email);
-            
-            let userCredential;
             if (isLoginMode) {
-                userCredential = await signInWithEmailAndPassword(auth, email, password);
-                console.log('Login successful');
+                await signInWithEmailAndPassword(auth, email, password);
             } else {
-                userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                console.log('Registration successful');
-                // Show success message
-                showAuthError('Registration successful! You can now login.', 'green');
-                // Switch back to login mode
+                await createUserWithEmailAndPassword(auth, email, password);
+                showAuthError('Account created successfully! Please sign in.', 'green');
                 toggleAuthModeHandler();
             }
-            
         } catch (error) {
             console.error('Auth error:', error);
             let errorMessage = 'Authentication failed. Please try again.';
@@ -302,9 +382,6 @@ try {
             switch (error.code) {
                 case 'auth/invalid-email':
                     errorMessage = 'Invalid email address format.';
-                    break;
-                case 'auth/user-disabled':
-                    errorMessage = 'This account has been disabled.';
                     break;
                 case 'auth/user-not-found':
                     errorMessage = 'No account found with this email.';
@@ -318,38 +395,29 @@ try {
                 case 'auth/weak-password':
                     errorMessage = 'Password should be at least 6 characters.';
                     break;
-                case 'auth/network-request-failed':
-                    errorMessage = 'Network error. Please check your connection.';
-                    break;
             }
             
             showAuthError(errorMessage);
         } finally {
-            // Reset button state
             button.disabled = false;
-            button.textContent = isLoginMode ? 'Login' : 'Register';
+            button.textContent = isLoginMode ? 'Sign in' : 'Sign up';
         }
     }
 
     function showAuthError(message, color = 'red') {
-        authError.textContent = message;
+        const errorMessage = document.getElementById('error-message');
+        errorMessage.textContent = message;
         authError.classList.remove('hidden');
-        if (color === 'green') {
-            authError.classList.remove('text-red-500');
-            authError.classList.add('text-green-500');
-        } else {
-            authError.classList.remove('text-green-500');
-            authError.classList.add('text-red-500');
-        }
+        authError.className = `p-3 rounded-lg text-sm text-center ${color === 'green' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`;
     }
 
     function toggleAuthModeHandler() {
         isLoginMode = !isLoginMode;
-        authTitle.textContent = isLoginMode ? 'Agent Login' : 'Agent Registration';
+        authTitle.textContent = isLoginMode ? 'Sign in to your account' : 'Create your account';
         toggleAuthMode.textContent = isLoginMode ? 
-            'New agent? Click here to Register' : 
-            'Already have an account? Click here to Login';
-        document.getElementById('login-button').textContent = isLoginMode ? 'Login' : 'Register';
+            'Don\'t have an account? Sign up' : 
+            'Already have an account? Sign in';
+        document.getElementById('login-button').textContent = isLoginMode ? 'Sign in' : 'Sign up';
         authError.classList.add('hidden');
         authForm.reset();
     }
@@ -357,7 +425,6 @@ try {
     async function handleLogout() {
         try {
             await signOut(auth);
-            console.log("User signed out");
         } catch (error) {
             console.error("Logout error:", error);
         }
@@ -370,7 +437,6 @@ try {
         console.log("Loading prospects for user:", currentUser.uid);
         loadingMessage.classList.remove('hidden');
         
-        // Query prospects for the current user only
         const prospectsRef = collection(db, 'prospects');
         const userProspectsQuery = query(
             prospectsRef, 
@@ -388,56 +454,89 @@ try {
                 });
             });
             
+            updateStats();
             renderProspects();
         }, (error) => {
             console.error("Error loading prospects:", error);
-            loadingMessage.textContent = 'Error loading prospects. Please try again.';
+            loadingMessage.textContent = 'Error loading prospects. Please refresh the page.';
         });
     }
 
+    // Update dashboard statistics
+    function updateStats() {
+        const total = prospects.length;
+        const enrolled = prospects.filter(p => p.status.includes('Enrolled')).length;
+        const active = prospects.filter(p => !p.status.includes('Not Interested') && !p.status.includes('Enrolled')).length;
+        const conversionRate = total > 0 ? Math.round((enrolled / total) * 100) : 0;
+
+        totalLeadsEl.textContent = total;
+        enrolledLeadsEl.textContent = enrolled;
+        activeLeadsEl.textContent = active;
+        conversionRateEl.textContent = conversionRate + '%';
+    }
+
     // Render prospects to the DOM
-    function renderProspects() {
+    function renderProspects(list = prospects) {
         prospectsList.innerHTML = '';
         
-        if (prospects.length === 0) {
+        if (list.length === 0) {
             prospectsList.innerHTML = `
-                <div class="text-center text-gray-500 p-8">
-                    No prospects found. Click "New Prospect" to add your first one!
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">No prospects found</h3>
+                    <p class="mt-2 text-gray-500">Get started by creating your first prospect.</p>
+                    <button id="empty-state-add-btn" class="mt-4 bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition duration-200">
+                        Add New Prospect
+                    </button>
                 </div>
             `;
+            document.getElementById('empty-state-add-btn').addEventListener('click', () => openProspectModal());
             return;
         }
 
-        prospects.forEach(prospect => {
+        list.forEach(prospect => {
             const prospectElement = document.createElement('div');
-            prospectElement.className = 'prospect-card bg-white p-6 rounded-xl shadow border-l-4 border-teal-500 cursor-pointer hover:shadow-md transition-all duration-200';
+            prospectElement.className = 'border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition duration-150';
+            
+            const statusClass = getStatusClass(prospect.status);
+            const date = prospect.createdAt?.toDate ? prospect.createdAt.toDate().toLocaleDateString() : 'Recently';
+            
             prospectElement.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-gray-800">${prospect.name}</h3>
-                        <p class="text-gray-600">${prospect.phone || 'No phone'}</p>
-                        <p class="text-sm text-gray-500 mt-2">${prospect.notes || 'No notes'}</p>
-                    </div>
-                    <div class="text-right ml-4">
-                        <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(prospect.status)}">
-                            ${prospect.status}
-                        </span>
-                        <div class="mt-2 space-x-2">
-                            <button class="edit-btn text-blue-600 hover:text-blue-800 text-sm font-medium" data-id="${prospect.id}">
-                                Edit
-                            </button>
-                            <button class="delete-btn text-red-600 hover:text-red-800 text-sm font-medium" data-id="${prospect.id}">
-                                Delete
-                            </button>
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-teal-600 font-semibold text-sm">${prospect.name.charAt(0).toUpperCase()}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">${prospect.name}</h3>
+                                <p class="text-gray-600">${prospect.phone || 'No phone number'}</p>
+                                ${prospect.notes ? `<p class="text-sm text-gray-500 mt-1">${prospect.notes}</p>` : ''}
+                            </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">
-                            ${prospect.createdAt?.toDate?.().toLocaleDateString() || 'Recently'}
-                        </p>
+                        <div class="flex items-center space-x-4">
+                            <span class="status-badge px-3 py-1 rounded-full text-sm font-medium ${statusClass}">
+                                ${prospect.status}
+                            </span>
+                            <div class="flex space-x-2">
+                                <button class="edit-btn text-teal-600 hover:text-teal-700 font-medium text-sm" data-id="${prospect.id}">
+                                    Edit
+                                </button>
+                                <button class="delete-btn text-red-600 hover:text-red-700 font-medium text-sm" data-id="${prospect.id}">
+                                    Delete
+                                </button>
+                            </div>
+                            <span class="text-sm text-gray-500">${date}</span>
+                        </div>
                     </div>
                 </div>
             `;
             
-            // Add event listeners for edit and delete buttons
+            // Add event listeners
             prospectElement.querySelector('.edit-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 const prospectToEdit = prospects.find(p => p.id === e.target.dataset.id);
@@ -447,47 +546,56 @@ try {
             prospectElement.querySelector('.delete-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 const prospectId = e.target.dataset.id;
-                const prospectToDelete = prospects.find(p => p.id === prospectId);
-                if (prospectToDelete) showDeleteConfirmation(prospectToDelete);
-            });
-            
-            // Click on card to edit
-            prospectElement.addEventListener('click', () => {
-                const prospectToEdit = prospects.find(p => p.id === prospect.id);
-                if (prospectToEdit) openProspectModal(prospectToEdit);
+                prospectToDelete = prospects.find(p => p.id === prospectId);
+                if (prospectToDelete && confirm(`Are you sure you want to delete "${prospectToDelete.name}"?`)) {
+                    handleDeleteProspect();
+                }
             });
             
             prospectsList.appendChild(prospectElement);
         });
     }
 
-    // Get status color class
-    function getStatusColor(status) {
-        const colors = {
-            'Lead': 'bg-blue-100 text-blue-800',
-            'Contacted - Needs SOA': 'bg-yellow-100 text-yellow-800',
-            'SOA Complete': 'bg-green-100 text-green-800',
-            'Quote Sent': 'bg-purple-100 text-purple-800',
-            'Enrolled - Medigap': 'bg-teal-100 text-teal-800',
-            'Enrolled - MA': 'bg-teal-200 text-teal-800',
-            'Not Interested': 'bg-gray-200 text-gray-700'
+    function getStatusClass(status) {
+        const classes = {
+            'Lead': 'status-lead',
+            'Contacted - Needs SOA': 'status-contacted',
+            'SOA Complete': 'status-soa',
+            'Quote Sent': 'status-quote',
+            'Enrolled - Medigap': 'status-enrolled',
+            'Enrolled - MA': 'status-enrolled',
+            'Not Interested': 'status-not-interested'
         };
-        return colors[status] || 'bg-gray-100 text-gray-800';
+        return classes[status] || 'status-lead';
     }
 
-    // Open prospect modal for creating or editing
+    // Filter prospects
+    function filterProspects() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusFilterValue = statusFilter.value;
+
+        const filtered = prospects.filter(prospect => {
+            const matchesSearch = prospect.name.toLowerCase().includes(searchTerm) ||
+                                (prospect.phone && prospect.phone.toLowerCase().includes(searchTerm));
+            const matchesStatus = !statusFilterValue || prospect.status === statusFilterValue;
+            
+            return matchesSearch && matchesStatus;
+        });
+
+        renderProspects(filtered);
+    }
+
+    // Open prospect modal
     function openProspectModal(prospect = null) {
         const isEditing = !!prospect;
         
         document.getElementById('modal-title').textContent = 
-            isEditing ? 'Edit Prospect' : 'New Prospect';
+            isEditing ? 'Edit Prospect' : 'Add New Prospect';
         document.getElementById('prospect-doc-id').value = 
             isEditing ? prospect.id : '';
         
-        // Show/hide delete button
         deleteProspectBtn.classList.toggle('hidden', !isEditing);
         
-        // Fill form with prospect data if editing
         if (isEditing) {
             document.getElementById('prospect-name').value = prospect.name || '';
             document.getElementById('prospect-phone').value = prospect.phone || '';
@@ -506,12 +614,12 @@ try {
         prospectModal.classList.add('hidden');
         prospectForm.reset();
         deleteProspectBtn.classList.add('hidden');
+        prospectToDelete = null;
     }
 
     // Handle prospect form submission
     async function handleProspectSubmit(e) {
         e.preventDefault();
-        console.log("Saving prospect...");
 
         const name = document.getElementById('prospect-name').value;
         if (!name) {
@@ -533,61 +641,34 @@ try {
             const docId = document.getElementById('prospect-doc-id').value;
 
             if (docId) {
-                // Update existing prospect
                 await setDoc(doc(db, 'prospects', docId), prospectData);
-                console.log("Prospect updated:", docId);
             } else {
-                // Add new prospect
                 await addDoc(collection(db, 'prospects'), prospectData);
-                console.log("Prospect added");
             }
 
-            // Close the modal after saving
+            // Close modal and return to dashboard
             closeProspectModal();
+            
         } catch (error) {
             console.error("Error saving prospect:", error);
             alert('Error saving prospect. Please try again.');
         }
     }
 
-    // Show delete confirmation modal
-    function showDeleteConfirmation(prospect = null) {
-        if (prospect) {
-            prospectToDelete = prospect;
-        }
-        
+    // Handle prospect deletion
+    async function handleDeleteProspect() {
         if (!prospectToDelete) {
-            // Get prospect from form if called from delete button in modal
+            // Get from form if called from delete button
             const docId = document.getElementById('prospect-doc-id').value;
             prospectToDelete = prospects.find(p => p.id === docId);
         }
         
-        if (prospectToDelete) {
-            deleteConfirmModal.classList.remove('hidden');
-        }
-    }
-
-    // Close delete confirmation modal
-    function closeDeleteConfirmModal() {
-        deleteConfirmModal.classList.add('hidden');
-        prospectToDelete = null;
-    }
-
-    // Handle prospect deletion
-    async function handleDeleteProspect() {
         if (!prospectToDelete) return;
         
         try {
             await deleteDoc(doc(db, 'prospects', prospectToDelete.id));
-            console.log("Prospect deleted:", prospectToDelete.id);
-            
-            // Close both modals
-            closeDeleteConfirmModal();
+            // Close modal and return to dashboard
             closeProspectModal();
-            
-            // Show success message
-            alert('Prospect deleted successfully!');
-            
         } catch (error) {
             console.error("Error deleting prospect:", error);
             alert('Error deleting prospect. Please try again.');
@@ -595,12 +676,9 @@ try {
     }
 
 } catch (error) {
-    console.error("Firebase initialization error:", error);
-    document.getElementById('status-message').querySelector('p').textContent = 
-        '❌ Firebase error: ' + error.message;
-    document.getElementById('status-message').classList.remove('hidden');
-    document.getElementById('status-message').classList.remove('bg-green-50', 'border-green-200');
-    document.getElementById('status-message').classList.add('bg-red-50', 'border-red-200');
+    console.error("CRM initialization error:", error);
+    document.getElementById('auth-error').textContent = 'Failed to initialize CRM. Please refresh the page.';
+    document.getElementById('auth-error').classList.remove('hidden');
 }
 </script>
 </body>
