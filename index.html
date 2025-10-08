@@ -288,7 +288,6 @@ try {
     let currentUser = null;
     let isLoginMode = true;
     let prospects = [];
-    let prospectToDelete = null;
 
     // DOM Elements
     const appContainer = document.getElementById('app-container');
@@ -322,7 +321,7 @@ try {
     addProspectBtn.addEventListener('click', () => openProspectModal());
     closeModalBtn.addEventListener('click', closeProspectModal);
     prospectForm.addEventListener('submit', handleProspectSubmit);
-    deleteProspectBtn.addEventListener('click', handleDeleteProspect);
+    deleteProspectBtn.addEventListener('click', handleDeleteFromModal);
     searchInput.addEventListener('input', filterProspects);
     statusFilter.addEventListener('change', filterProspects);
     
@@ -546,9 +545,9 @@ try {
             prospectElement.querySelector('.delete-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 const prospectId = e.target.dataset.id;
-                prospectToDelete = prospects.find(p => p.id === prospectId);
-                if (prospectToDelete && confirm(`Are you sure you want to delete "${prospectToDelete.name}"?`)) {
-                    handleDeleteProspect();
+                const prospectToDelete = prospects.find(p => p.id === prospectId);
+                if (prospectToDelete) {
+                    handleDeleteProspect(prospectToDelete);
                 }
             });
             
@@ -614,10 +613,9 @@ try {
         prospectModal.classList.add('hidden');
         prospectForm.reset();
         deleteProspectBtn.classList.add('hidden');
-        prospectToDelete = null;
     }
 
-    // Handle prospect form submission - FIXED TO CLOSE IMMEDIATELY
+    // Handle prospect form submission
     async function handleProspectSubmit(e) {
         e.preventDefault();
 
@@ -637,7 +635,7 @@ try {
             lastUpdated: new Date()
         };
 
-        // CLOSE THE MODAL IMMEDIATELY - don't wait for Firebase
+        // CLOSE THE MODAL IMMEDIATELY
         closeProspectModal();
 
         try {
@@ -651,35 +649,39 @@ try {
                 console.log("Prospect added");
             }
             
-            // The prospect list will automatically update via the real-time listener
-            // So the user sees the new/updated prospect immediately on the dashboard
-            
         } catch (error) {
             console.error("Error saving prospect:", error);
             alert('Error saving prospect. Please try again.');
         }
     }
 
-    // Handle prospect deletion
-    async function handleDeleteProspect() {
-        if (!prospectToDelete) {
-            // Get from form if called from delete button
-            const docId = document.getElementById('prospect-doc-id').value;
-            prospectToDelete = prospects.find(p => p.id === docId);
-        }
-        
+    // Handle delete from the main list
+    async function handleDeleteProspect(prospectToDelete) {
         if (!prospectToDelete) return;
         
-        // CLOSE THE MODAL IMMEDIATELY
-        closeProspectModal();
+        if (confirm(`Are you sure you want to delete "${prospectToDelete.name}"? This action cannot be undone.`)) {
+            try {
+                await deleteDoc(doc(db, 'prospects', prospectToDelete.id));
+                console.log("Prospect deleted successfully");
+                // The list will automatically update via the real-time listener
+            } catch (error) {
+                console.error("Error deleting prospect:", error);
+                alert('Error deleting prospect. Please try again.');
+            }
+        }
+    }
+
+    // Handle delete from the modal (when editing)
+    async function handleDeleteFromModal() {
+        const docId = document.getElementById('prospect-doc-id').value;
+        const prospectToDelete = prospects.find(p => p.id === docId);
         
-        try {
-            await deleteDoc(doc(db, 'prospects', prospectToDelete.id));
-            console.log("Prospect deleted");
-            // The list will automatically update via the real-time listener
-        } catch (error) {
-            console.error("Error deleting prospect:", error);
-            alert('Error deleting prospect. Please try again.');
+        if (prospectToDelete) {
+            // Close modal first
+            closeProspectModal();
+            
+            // Then delete
+            await handleDeleteProspect(prospectToDelete);
         }
     }
 
