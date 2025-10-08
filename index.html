@@ -760,3 +760,294 @@
                 }
 
                 userRolesListEl.appendChild(card);
+            });
+        }
+        
+        /**
+         * Toggles the status of a user's account
+         */
+        async function toggleUserStatus(targetUid, newStatus) {
+            const rolesRef = getRolesCollectionRef();
+            if (!rolesRef) return;
+            
+            try {
+                const userDocRef = doc(rolesRef, targetUid);
+                await setDoc(userDocRef, { status: newStatus }, { merge: true });
+                console.log(`User ${targetUid} status updated to ${newStatus}`);
+            } catch (e) {
+                console.error("Error updating user status:", e);
+            }
+        }
+        
+        /**
+         * Returns the path reference for the prospects collection
+         */
+        function getProspectsCollectionRef() {
+            if (!db || !userId) return null;
+            return collection(db, PROSPECTS_COLLECTION);
+        }
+
+        /**
+         * Sets up the real-time Firestore listener for prospects
+         */
+        function setupRealtimeListener() {
+            const prospectsRef = getProspectsCollectionRef();
+            if (!prospectsRef) {
+                console.error("Collection reference is null. Cannot set up listener.");
+                return;
+            }
+
+            loadingMessageEl.classList.remove('hidden');
+
+            onSnapshot(prospectsRef, (snapshot) => {
+                loadingMessageEl.classList.add('hidden');
+                prospectsList = [];
+                snapshot.forEach((doc) => {
+                    prospectsList.push({ id: doc.id, ...doc.data() });
+                });
+
+                prospectsList.sort((a, b) => (b.lastContacted || 0) - (a.lastContacted || 0));
+
+                renderProspects();
+
+            }, (error) => {
+                console.error("Error fetching documents: ", error);
+                prospectListEl.innerHTML = `<div class="text-red-600 p-4 bg-red-50 rounded-lg">Error loading data: ${error.message}</div>`;
+            });
+        }
+
+        /**
+         * Filters prospects based on search and filter criteria
+         */
+        function filterProspects() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            const filteredList = prospectsList.filter(prospect => {
+                const nameMatch = prospect.name.toLowerCase().includes(searchTerm);
+                const phoneMatch = prospect.phone && prospect.phone.toLowerCase().includes(searchTerm);
+                const statusMatch = !statusFilter || prospect.status === statusFilter;
+                return (nameMatch || phoneMatch) && statusMatch;
+            });
+
+            renderProspects(filteredList);
+        }
+
+        /**
+         * Renders the prospect list to the DOM
+         */
+        function renderProspects(list = prospectsList) {
+            prospectListEl.innerHTML = '';
+            
+            if (list.length === 0) {
+                prospectListEl.innerHTML = `<p class="text-center text-gray-500 p-8">No prospects found. Click 'New Prospect' to add one!</p>`;
+                return;
+            }
+
+            list.forEach(prospect => {
+                const date = new Date(prospect.lastContacted || Date.now()).toLocaleDateString();
+                const statusClass = statusColors[prospect.status] || 'bg-gray-100 text-gray-800';
+
+                const prospectCard = document.createElement('div');
+                prospectCard.className = 'prospect-card bg-white p-4 md:p-6 rounded-xl shadow hover:shadow-lg transition duration-200 cursor-pointer border-l-4 border-teal-500';
+                prospectCard.dataset.id = prospect.id;
+                
+                const saleText = prospect.saleValue ? 
+                                `<span class="text-green-600 font-bold ml-4">Sale: $${parseFloat(prospect.saleValue).toFixed(2)} AP</span>` : '';
+
+                prospectCard.innerHTML = `
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div class="mb-2 md:mb-0">
+                            <p class="text-lg font-semibold text-gray-800">${prospect.name}</p>
+                            <p class="text-sm text-gray-500">${prospect.phone || 'No phone'}</p>
+                        </div>
+                        <div class="flex flex-col md:flex-row md:space-x-4 space-y-2 md:space-y-0 text-sm">
+                            <span class="${statusClass} text-xs font-medium px-2.5 py-1 rounded-full text-center min-w-[150px]">${prospect.status}</span>
+                            <span class="text-gray-500 text-xs mt-1 md:mt-0">Last Contacted: ${date} ${saleText}</span>
+                        </div>
+                    </div>
+                `;
+                prospectCard.addEventListener('click', () => openModal(prospect));
+                prospectListEl.appendChild(prospectCard);
+            });
+        }
+
+        /**
+         * Opens the prospect management modal
+         */
+        function openModal(prospectData = null) {
+            formEl.reset();
+            let isEditing = !!prospectData;
+            
+            document.getElementById('modal-title').textContent = isEditing ? 'Edit Prospect' : 'New Prospect';
+            document.getElementById('prospect-doc-id').value = isEditing ? prospectData.id : '';
+            
+            deleteBtn.classList.toggle('hidden', !isEditing);
+            
+            if (isEditing) {
+                document.getElementById('prospect-name').value = prospectData.name || '';
+                document.getElementById('prospect-phone').value = prospectData.phone || '';
+                document.getElementById('prospect-status').value = prospectData.status || 'Lead';
+                document.getElementById('prospect-notes').value = prospectData.notes || '';
+
+                // Ensure nested objects exist before accessing properties
+                const compliance = prospectData.compliance || {};
+                document.getElementById('compliance-recorded').checked = !!compliance.recorded;
+                document.getElementById('compliance-soa-taken').checked = !!compliance.soaTaken;
+                document.getElementById('compliance-soa-date').value = compliance.soaDate || '';
+
+                const products = prospectData.products || {};
+                document.getElementById('product-medigap').checked = !!products.medigap;
+                document.getElementById('product-ma').checked = !!products.ma;
+                document.getElementById('product-dvh').checked = !!products.dvh;
+                document.getElementById('product-hip').checked = !!products.hip;
+
+                document.getElementById('appointment-date').value = prospectData.appointmentDate || '';
+                document.getElementById('appointment-time').value = prospectData.appointmentTime || '';
+                document.getElementById('sale-value').value = prospectData.saleValue || '';
+            }
+
+            modalEl.classList.remove('hidden');
+        }
+
+        /**
+         * Closes the prospect management modal
+         */
+        function closeModal() {
+            modalEl.classList.add('hidden');
+            formEl.reset();
+        }
+
+        /**
+         * Saves the prospect data to Firestore
+         */
+        async function saveProspect(event) {
+            event.preventDefault();
+            
+            const docId = document.getElementById('prospect-doc-id').value;
+            const isEditing = !!docId;
+
+            const name = document.getElementById('prospect-name').value;
+            if (!name) {
+                alert("Name is required.");
+                return;
+            }
+
+            const prospectData = {
+                name: name,
+                phone: document.getElementById('prospect-phone').value,
+                status: document.getElementById('prospect-status').value,
+                notes: document.getElementById('prospect-notes').value,
+                lastContacted: Date.now(),
+                
+                appointmentDate: document.getElementById('appointment-date').value,
+                appointmentTime: document.getElementById('appointment-time').value,
+                saleValue: document.getElementById('sale-value').value,
+
+                compliance: {
+                    recorded: document.getElementById('compliance-recorded').checked,
+                    soaTaken: document.getElementById('compliance-soa-taken').checked,
+                    soaDate: document.getElementById('compliance-soa-date').value,
+                },
+                products: {
+                    medigap: document.getElementById('product-medigap').checked,
+                    ma: document.getElementById('product-ma').checked,
+                    dvh: document.getElementById('product-dvh').checked,
+                    hip: document.getElementById('product-hip').checked,
+                }
+            };
+
+            const prospectsRef = getProspectsCollectionRef();
+            if (!prospectsRef) return;
+
+            try {
+                if (isEditing) {
+                    const docRef = doc(prospectsRef, docId);
+                    await setDoc(docRef, prospectData);
+                    console.log("Document updated with ID: ", docId);
+                } else {
+                    await addDoc(prospectsRef, prospectData);
+                    console.log("New document added.");
+                }
+                
+                closeModal();
+
+            } catch (e) {
+                console.error("Error adding/updating document: ", e);
+                alert("Error saving prospect: " + e.message);
+            }
+        }
+        
+        /**
+         * Deletes the prospect after confirmation
+         */
+        function handleDeleteConfirmation() {
+            const docId = document.getElementById('prospect-doc-id').value;
+            if (!docId) return;
+
+            deleteConfirmModalEl.classList.remove('hidden');
+
+            document.getElementById('confirm-delete-btn').onclick = async () => {
+                deleteConfirmModalEl.classList.add('hidden');
+                closeModal();
+                await deleteProspect(docId);
+            };
+
+            document.getElementById('cancel-delete-btn').onclick = () => {
+                deleteConfirmModalEl.classList.add('hidden');
+            };
+        }
+
+        /**
+         * Performs the actual delete operation in Firestore
+         */
+        async function deleteProspect(docId) {
+            const prospectsRef = getProspectsCollectionRef();
+            if (!prospectsRef) return;
+            
+            try {
+                const docRef = doc(prospectsRef, docId);
+                await deleteDoc(docRef);
+                console.log("Document successfully deleted!");
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                alert("Error deleting prospect: " + e.message);
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('add-prospect-btn').addEventListener('click', () => openModal(null));
+        document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+        modalEl.addEventListener('click', (e) => {
+            if (e.target === modalEl) {
+                closeModal();
+            }
+        });
+        formEl.addEventListener('submit', saveProspect);
+        deleteBtn.addEventListener('click', handleDeleteConfirmation);
+
+        // Auth Event Listeners
+        authFormEl.addEventListener('submit', handleAuthForm);
+        toggleAuthModeBtn.addEventListener('click', toggleAuthMode);
+        logoutBtn.addEventListener('click', handleLogout);
+        
+        // Clear error when user starts typing
+        authEmailInput.addEventListener('input', clearAuthError);
+        authPasswordInput.addEventListener('input', clearAuthError);
+
+        // Search and filter listeners
+        document.getElementById('search-input').addEventListener('input', filterProspects);
+        document.getElementById('status-filter').addEventListener('change', filterProspects);
+
+        // Admin Listeners
+        adminBtn.addEventListener('click', openAdminModal);
+        document.getElementById('close-admin-modal-btn').addEventListener('click', () => {
+            adminAccessModalEl.classList.add('hidden');
+        });
+
+        // Initialize the App
+        initializeFirebase();
+
+    </script>
+</body>
+</html>
