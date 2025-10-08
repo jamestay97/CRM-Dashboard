@@ -3,81 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medicare CRM</title>
+    <title>Medicare Agent CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.7); }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <!-- The CRM App -->
-        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
-            <h1 class="text-2xl font-bold text-teal-600 mb-2 text-center">Medicare CRM</h1>
-            <p class="text-gray-600 text-center mb-6">Agent Portal</p>
-            
-            <!-- Firebase Status -->
-            <div id="firebase-status" class="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
-                <div id="status-message" class="text-sm text-blue-700">Initializing Firebase...</div>
-            </div>
-
-            <!-- Auth Form -->
-            <form id="auth-form" class="space-y-4">
-                <div>
-                    <label class="block text-gray-700 text-sm font-medium mb-1">Email</label>
-                    <input type="email" id="auth-email" required 
-                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                           placeholder="your@email.com">
-                </div>
-                <div>
-                    <label class="block text-gray-700 text-sm font-medium mb-1">Password</label>
-                    <input type="password" id="auth-password" required 
-                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                           placeholder="Your password">
-                </div>
-                
-                <div id="auth-error" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p id="error-message" class="text-red-700 text-sm"></p>
-                </div>
-
-                <button type="submit" id="auth-button" 
-                        class="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-lg font-semibold transition duration-200">
-                    Sign In
-                </button>
-            </form>
-
-            <div class="mt-4 text-center">
-                <button id="toggle-auth-mode" class="text-teal-600 hover:text-teal-700 text-sm">
-                    Don't have an account? Sign up
-                </button>
-            </div>
-        </div>
-
-        <!-- App Content (hidden until auth) -->
-        <div id="app-content" class="hidden mt-8 bg-white rounded-lg shadow-lg p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-800">Your Prospects</h2>
-                <div class="flex items-center space-x-4">
-                    <span id="user-email" class="text-gray-600 text-sm"></span>
-                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+<body>
+    <!-- Main Application Container -->
+    <div id="app-container" class="min-h-screen flex flex-col hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-md p-4 sticky top-0 z-10">
+            <div class="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto">
+                <h1 class="text-2xl font-bold text-teal-600">Medicare CRM Dashboard</h1>
+                <div class="flex items-center space-x-4 mt-2 md:mt-0">
+                    <span id="user-email" class="text-sm text-gray-700 font-medium">Loading...</span>
+                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-3 rounded-lg text-sm transition duration-200">
                         Logout
                     </button>
                 </div>
             </div>
-            
-            <div class="mb-6">
-                <button id="add-prospect-btn" class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded">
-                    + Add New Prospect
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-700">Prospects & Clients</h2>
+                <button id="add-prospect-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-lg shadow-lg transition duration-200">
+                    + New Prospect
                 </button>
             </div>
-            
-            <div id="prospects-list" class="space-y-3">
-                <div class="text-center text-gray-500 py-8">
-                    No prospects yet. Add your first one above!
-                </div>
+
+            <!-- Prospect List -->
+            <div id="prospects-list" class="space-y-4">
+                <div id="loading-message" class="text-center text-gray-500 p-8">Loading prospects...</div>
             </div>
+        </main>
+    </div>
+
+    <!-- Login/Signup Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-2xl p-8">
+            <h3 id="auth-title" class="text-2xl font-bold mb-6 text-teal-600 text-center">Agent Login</h3>
+            
+            <!-- Status Message -->
+            <div id="status-message" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg hidden">
+                <p class="text-green-700 text-sm"></p>
+            </div>
+
+            <form id="auth-form">
+                <div class="space-y-4">
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Email</span>
+                        <input type="email" id="auth-email" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="your@email.com">
+                    </label>
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Password</span>
+                        <input type="password" id="auth-password" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="Your password">
+                    </label>
+                    <p id="auth-error" class="text-red-500 text-sm text-center hidden"></p>
+                </div>
+
+                <div class="flex flex-col space-y-3 mt-6">
+                    <button type="submit" id="login-button" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 px-6 rounded-lg shadow-md transition duration-200">
+                        Login
+                    </button>
+                    <button type="button" id="toggle-auth-mode" class="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                        New agent? Click here to Register
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Prospect Management Modal -->
+    <div id="prospect-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl p-6">
+            <h3 id="modal-title" class="text-2xl font-bold mb-6 text-teal-600">New Prospect</h3>
+            <form id="prospect-form">
+                <input type="hidden" id="prospect-doc-id" value="">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Client Name *</span>
+                        <input type="text" id="prospect-name" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                    </label>
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Phone Number</span>
+                        <input type="tel" id="prospect-phone" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                    </label>
+                    <label class="block md:col-span-2">
+                        <span class="text-gray-700 font-medium">Status</span>
+                        <select id="prospect-status" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                            <option value="Lead">Lead</option>
+                            <option value="Contacted - Needs SOA">Contacted - Needs SOA</option>
+                            <option value="SOA Complete">SOA Complete</option>
+                            <option value="Quote Sent">Quote Sent</option>
+                            <option value="Enrolled - Medigap">Enrolled - Medigap</option>
+                            <option value="Enrolled - MA">Enrolled - MA</option>
+                            <option value="Not Interested">Not Interested</option>
+                        </select>
+                    </label>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Notes</span>
+                        <textarea id="prospect-notes" rows="4" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"></textarea>
+                    </label>
+                </div>
+
+                <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                    <button type="button" id="close-modal-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" id="save-prospect-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-6 rounded-lg shadow-md transition duration-200">
+                        Save Prospect
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
 <script type="module">
-// Import Firebase modules (CORRECT VERSION)
+// Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { 
     getAuth, 
@@ -93,21 +144,23 @@ import {
     onSnapshot,
     query,
     where,
-    orderBy
+    orderBy,
+    doc,
+    setDoc,
+    deleteDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Your Firebase Configuration (USE THIS EXACT ONE)
+// Your Firebase Configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAJdgny5PgiiNEmjiW9D-2I8s8s86IIGuGDw",
-  authDomain: "crm-web-c8dd7.firebaseapp.com",
-  projectId: "crm-web-c8dd7",
-  storageBucket: "crm-web-c8dd7.firebasestorage.app",
-  messagingSenderId: "1006804847425",
-  appId: "1:1006804847425:web:02773a5c430113fa362fc0"
+    apiKey: "AIzaSyCxtKpErTBR9KNMSOumFoApxo1oK9dcMM0",
+    authDomain: "crm2-agents.firebaseapp.com",
+    projectId: "crm2-agents",
+    storageBucket: "crm2-agents.firebasestorage.app",
+    messagingSenderId: "730895877711",
+    appId: "1:730895877711:web:2df0461745813122f38c3a"
 };
 
-// Update status
-document.getElementById('status-message').textContent = 'Connecting to Firebase...';
+console.log("Initializing Firebase with project: crm2-agents");
 
 try {
     // Initialize Firebase
@@ -115,142 +168,172 @@ try {
     const auth = getAuth(app);
     const db = getFirestore(app);
     
-    document.getElementById('status-message').innerHTML = 
-        '✅ Firebase connected successfully!<br>Project: crm-web-c8dd7';
-    
-    console.log('Firebase initialized successfully!');
+    console.log("✅ Firebase initialized successfully!");
 
-    // App state
+    // Show success message
+    const statusMessage = document.getElementById('status-message');
+    statusMessage.querySelector('p').textContent = '✅ Connected to Firebase! You can now register and login.';
+    statusMessage.classList.remove('hidden');
+
+    // State variables
     let currentUser = null;
     let isLoginMode = true;
-    
-    // DOM elements
+    let prospects = [];
+
+    // DOM Elements
+    const appContainer = document.getElementById('app-container');
+    const authModal = document.getElementById('auth-modal');
     const authForm = document.getElementById('auth-form');
+    const authTitle = document.getElementById('auth-title');
     const authError = document.getElementById('auth-error');
-    const errorMessage = document.getElementById('error-message');
     const toggleAuthMode = document.getElementById('toggle-auth-mode');
-    const authButton = document.getElementById('auth-button');
-    const appContent = document.getElementById('app-content');
     const userEmailSpan = document.getElementById('user-email');
     const logoutBtn = document.getElementById('logout-btn');
     const prospectsList = document.getElementById('prospects-list');
+    const loadingMessage = document.getElementById('loading-message');
     const addProspectBtn = document.getElementById('add-prospect-btn');
-    
-    // Event listeners
+    const prospectModal = document.getElementById('prospect-modal');
+    const prospectForm = document.getElementById('prospect-form');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    // Event Listeners
     authForm.addEventListener('submit', handleAuth);
     toggleAuthMode.addEventListener('click', toggleAuthModeHandler);
     logoutBtn.addEventListener('click', handleLogout);
-    addProspectBtn.addEventListener('click', addProspect);
-    
-    // Auth state listener
+    addProspectBtn.addEventListener('click', () => openProspectModal());
+    closeModalBtn.addEventListener('click', closeProspectModal);
+    prospectForm.addEventListener('submit', handleProspectSubmit);
+    prospectModal.addEventListener('click', (e) => {
+        if (e.target === prospectModal) closeProspectModal();
+    });
+
+    // Auth State Listener
     onAuthStateChanged(auth, (user) => {
-        console.log('Auth state changed:', user);
+        console.log("Auth state changed:", user);
         if (user) {
             currentUser = user;
             userEmailSpan.textContent = user.email;
-            document.querySelector('.max-w-md').classList.add('hidden');
-            appContent.classList.remove('hidden');
+            appContainer.classList.remove('hidden');
+            authModal.classList.add('hidden');
             loadProspects();
         } else {
             currentUser = null;
-            document.querySelector('.max-w-md').classList.remove('hidden');
-            appContent.classList.add('hidden');
+            appContainer.classList.add('hidden');
+            authModal.classList.remove('hidden');
+            prospectsList.innerHTML = '';
+            loadingMessage.textContent = 'Please log in to view prospects.';
         }
     });
-    
+
+    // Auth Handler
     async function handleAuth(e) {
         e.preventDefault();
+        console.log("Auth form submitted");
         
         const email = document.getElementById('auth-email').value;
         const password = document.getElementById('auth-password').value;
+        const button = document.getElementById('login-button');
         
         if (!email || !password) {
-            showError('Please fill in all fields');
+            showAuthError('Please fill in all fields');
             return;
         }
-        
-        // Show loading
-        authButton.disabled = true;
-        authButton.textContent = isLoginMode ? 'Signing in...' : 'Creating account...';
+
+        // Show loading state
+        button.disabled = true;
+        button.textContent = isLoginMode ? 'Signing in...' : 'Registering...';
         authError.classList.add('hidden');
-        
+
         try {
             console.log(`Attempting ${isLoginMode ? 'login' : 'registration'} for:`, email);
             
+            let userCredential;
             if (isLoginMode) {
-                await signInWithEmailAndPassword(auth, email, password);
+                userCredential = await signInWithEmailAndPassword(auth, email, password);
                 console.log('Login successful');
             } else {
-                await createUserWithEmailAndPassword(auth, email, password);
+                userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 console.log('Registration successful');
-                // Switch back to login mode after registration
+                // Show success message
+                showAuthError('Registration successful! You can now login.', 'green');
+                // Switch back to login mode
                 toggleAuthModeHandler();
             }
+            
         } catch (error) {
             console.error('Auth error:', error);
-            let errorMessage = 'Authentication failed. ';
+            let errorMessage = 'Authentication failed. Please try again.';
             
             switch (error.code) {
                 case 'auth/invalid-email':
-                    errorMessage += 'Invalid email address.';
+                    errorMessage = 'Invalid email address format.';
                     break;
                 case 'auth/user-disabled':
-                    errorMessage += 'This account has been disabled.';
+                    errorMessage = 'This account has been disabled.';
                     break;
                 case 'auth/user-not-found':
-                    errorMessage += 'No account found with this email.';
+                    errorMessage = 'No account found with this email.';
                     break;
                 case 'auth/wrong-password':
-                    errorMessage += 'Incorrect password.';
+                    errorMessage = 'Incorrect password.';
                     break;
                 case 'auth/email-already-in-use':
-                    errorMessage += 'This email is already registered.';
+                    errorMessage = 'This email is already registered.';
                     break;
                 case 'auth/weak-password':
-                    errorMessage += 'Password should be at least 6 characters.';
+                    errorMessage = 'Password should be at least 6 characters.';
                     break;
                 case 'auth/network-request-failed':
-                    errorMessage += 'Network error. Please check your connection.';
+                    errorMessage = 'Network error. Please check your connection.';
                     break;
-                default:
-                    errorMessage += error.message;
             }
             
-            showError(errorMessage);
+            showAuthError(errorMessage);
         } finally {
-            authButton.disabled = false;
-            authButton.textContent = isLoginMode ? 'Sign In' : 'Sign Up';
+            // Reset button state
+            button.disabled = false;
+            button.textContent = isLoginMode ? 'Login' : 'Register';
         }
     }
-    
-    function showError(message) {
-        errorMessage.textContent = message;
+
+    function showAuthError(message, color = 'red') {
+        authError.textContent = message;
         authError.classList.remove('hidden');
+        if (color === 'green') {
+            authError.classList.remove('text-red-500');
+            authError.classList.add('text-green-500');
+        } else {
+            authError.classList.remove('text-green-500');
+            authError.classList.add('text-red-500');
+        }
     }
-    
+
     function toggleAuthModeHandler() {
         isLoginMode = !isLoginMode;
-        authButton.textContent = isLoginMode ? 'Sign In' : 'Sign Up';
+        authTitle.textContent = isLoginMode ? 'Agent Login' : 'Agent Registration';
         toggleAuthMode.textContent = isLoginMode ? 
-            'Don\'t have an account? Sign up' : 
-            'Already have an account? Sign in';
+            'New agent? Click here to Register' : 
+            'Already have an account? Click here to Login';
+        document.getElementById('login-button').textContent = isLoginMode ? 'Login' : 'Register';
         authError.classList.add('hidden');
         authForm.reset();
     }
-    
+
     async function handleLogout() {
         try {
             await signOut(auth);
-            console.log('User signed out');
+            console.log("User signed out");
         } catch (error) {
-            console.error('Logout error:', error);
+            console.error("Logout error:", error);
         }
     }
-    
+
+    // Load prospects from Firestore
     function loadProspects() {
         if (!currentUser) return;
         
-        console.log('Loading prospects for user:', currentUser.uid);
+        console.log("Loading prospects for user:", currentUser.uid);
+        loadingMessage.classList.remove('hidden');
         
         // Query prospects for the current user only
         const prospectsRef = collection(db, 'prospects');
@@ -261,73 +344,152 @@ try {
         );
         
         onSnapshot(userProspectsQuery, (snapshot) => {
-            prospectsList.innerHTML = '';
-            
-            if (snapshot.empty) {
-                prospectsList.innerHTML = `
-                    <div class="text-center text-gray-500 py-8">
-                        No prospects yet. Add your first one above!
-                    </div>
-                `;
-                return;
-            }
-            
+            loadingMessage.classList.add('hidden');
+            prospects = [];
             snapshot.forEach((doc) => {
-                const prospect = doc.data();
-                const div = document.createElement('div');
-                div.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200';
-                div.innerHTML = `
-                    <h3 class="font-semibold text-gray-800">${prospect.name}</h3>
-                    <p class="text-gray-600 text-sm mt-1">${prospect.phone || 'No phone number'}</p>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                            ${prospect.status || 'Lead'}
-                        </span>
-                        <span class="text-xs text-gray-500">
-                            ${prospect.createdAt?.toDate?.().toLocaleDateString() || 'Recently'}
-                        </span>
-                    </div>
-                `;
-                prospectsList.appendChild(div);
+                prospects.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
             });
+            
+            renderProspects();
         }, (error) => {
-            console.error('Error loading prospects:', error);
-            prospectsList.innerHTML = `
-                <div class="text-center text-red-500 py-4">
-                    Error loading prospects. Please refresh the page.
-                </div>
-            `;
+            console.error("Error loading prospects:", error);
+            loadingMessage.textContent = 'Error loading prospects. Please try again.';
         });
     }
-    
-    async function addProspect() {
-        if (!currentUser) return;
+
+    // Render prospects to the DOM
+    function renderProspects() {
+        prospectsList.innerHTML = '';
         
-        const name = prompt("Enter prospect name:");
-        if (!name) return;
+        if (prospects.length === 0) {
+            prospectsList.innerHTML = `
+                <div class="text-center text-gray-500 p-8">
+                    No prospects found. Click "New Prospect" to add your first one!
+                </div>
+            `;
+            return;
+        }
+
+        prospects.forEach(prospect => {
+            const prospectElement = document.createElement('div');
+            prospectElement.className = 'prospect-card bg-white p-6 rounded-xl shadow border-l-4 border-teal-500 cursor-pointer hover:shadow-md transition-shadow';
+            prospectElement.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">${prospect.name}</h3>
+                        <p class="text-gray-600">${prospect.phone || 'No phone'}</p>
+                        <p class="text-sm text-gray-500 mt-2">${prospect.notes || 'No notes'}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(prospect.status)}">
+                            ${prospect.status}
+                        </span>
+                        <p class="text-xs text-gray-500 mt-2">
+                            ${prospect.createdAt?.toDate?.().toLocaleDateString() || 'Recently'}
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            prospectElement.addEventListener('click', () => openProspectModal(prospect));
+            prospectsList.appendChild(prospectElement);
+        });
+    }
+
+    // Get status color class
+    function getStatusColor(status) {
+        const colors = {
+            'Lead': 'bg-blue-100 text-blue-800',
+            'Contacted - Needs SOA': 'bg-yellow-100 text-yellow-800',
+            'SOA Complete': 'bg-green-100 text-green-800',
+            'Quote Sent': 'bg-purple-100 text-purple-800',
+            'Enrolled - Medigap': 'bg-teal-100 text-teal-800',
+            'Enrolled - MA': 'bg-teal-200 text-teal-800',
+            'Not Interested': 'bg-gray-200 text-gray-700'
+        };
+        return colors[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    // Open prospect modal for creating or editing
+    function openProspectModal(prospect = null) {
+        const isEditing = !!prospect;
         
-        const phone = prompt("Enter phone number (optional):");
-        const status = prompt("Enter status (Lead, Contacted, Interested, Not Interested):", "Lead");
+        document.getElementById('modal-title').textContent = 
+            isEditing ? 'Edit Prospect' : 'New Prospect';
+        document.getElementById('prospect-doc-id').value = 
+            isEditing ? prospect.id : '';
         
+        // Fill form with prospect data if editing
+        if (isEditing) {
+            document.getElementById('prospect-name').value = prospect.name || '';
+            document.getElementById('prospect-phone').value = prospect.phone || '';
+            document.getElementById('prospect-status').value = prospect.status || 'Lead';
+            document.getElementById('prospect-notes').value = prospect.notes || '';
+        } else {
+            prospectForm.reset();
+            document.getElementById('prospect-status').value = 'Lead';
+        }
+        
+        prospectModal.classList.remove('hidden');
+    }
+
+    // Close prospect modal
+    function closeProspectModal() {
+        prospectModal.classList.add('hidden');
+        prospectForm.reset();
+    }
+
+    // Handle prospect form submission
+    async function handleProspectSubmit(e) {
+        e.preventDefault();
+        console.log("Saving prospect...");
+
+        const name = document.getElementById('prospect-name').value;
+        if (!name) {
+            alert('Please enter a client name');
+            return;
+        }
+
+        const prospectData = {
+            name: name,
+            phone: document.getElementById('prospect-phone').value,
+            status: document.getElementById('prospect-status').value,
+            notes: document.getElementById('prospect-notes').value,
+            userId: currentUser.uid,
+            createdAt: new Date(),
+            lastUpdated: new Date()
+        };
+
         try {
-            await addDoc(collection(db, 'prospects'), {
-                name: name,
-                phone: phone || '',
-                status: status || 'Lead',
-                userId: currentUser.uid,
-                createdAt: new Date()
-            });
-            console.log('Prospect added successfully');
+            const docId = document.getElementById('prospect-doc-id').value;
+
+            if (docId) {
+                // Update existing prospect
+                await setDoc(doc(db, 'prospects', docId), prospectData);
+                console.log("Prospect updated:", docId);
+            } else {
+                // Add new prospect
+                await addDoc(collection(db, 'prospects'), prospectData);
+                console.log("Prospect added");
+            }
+
+            closeProspectModal();
         } catch (error) {
-            console.error('Error adding prospect:', error);
-            alert('Error adding prospect: ' + error.message);
+            console.error("Error saving prospect:", error);
+            alert('Error saving prospect. Please try again.');
         }
     }
-    
+
 } catch (error) {
-    console.error('Firebase initialization error:', error);
-    document.getElementById('status-message').innerHTML = 
+    console.error("Firebase initialization error:", error);
+    document.getElementById('status-message').querySelector('p').textContent = 
         '❌ Firebase error: ' + error.message;
+    document.getElementById('status-message').classList.remove('hidden');
+    document.getElementById('status-message').classList.remove('bg-green-50', 'border-green-200');
+    document.getElementById('status-message').classList.add('bg-red-50', 'border-red-200');
 }
 </script>
 </body>
